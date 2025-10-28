@@ -318,6 +318,7 @@ class PermissionBloc extends Cubit<PermissionState> {
       "distance_in": 0.0,
       "foto_in": formData.fotoIn,
       "status_emp": 5,
+      "apk": 0,
     });
 
     try {

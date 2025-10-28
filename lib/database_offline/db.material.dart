@@ -6,7 +6,6 @@ import 'package:traxes/model/skupro/skupro.model.dart';
 // ignore: depend_on_referenced_packages
 import 'package:path/path.dart';
 
-
 class DBMaterialHelper {
   DBMaterialHelper();
 
@@ -17,32 +16,43 @@ class DBMaterialHelper {
     print('Database path: $databasePath');
   }
   
-  return openDatabase(databasePath, onCreate: (database, v) async {
-    if (kDebugMode) {
-      print('Creating table sku_material...');
-    }
-    await database.execute("CREATE TABLE sku_material ("
-        "sec_id TEXT NOT NULL,"
-        "kode_sku TEXT NOT NULL,"
-        "nama_material TEXT NOT NULL,"
-        "material_type TEXT NOT NULL,"
-        "category TEXT NOT NULL,"
-        "project TEXT NOT NULL,"
-        "brand TEXT NOT NULL,"
-        "variant TEXT NOT NULL,"
-        "uom TEXT NOT NULL,"
-        "price TEXT NOT NULL,"
-        "price_sell TEXT,"
-        "poin TEXT,"
-        "volume TEXT,"
-        "is_active TEXT,"
-        "createdat TEXT NOT NULL,"
-        "createdby TEXT"
-        ")");
-    if (kDebugMode) {
-      print('Table sku_material created successfully.');
-    }
-  }, version: 1);
+  return openDatabase(databasePath, version: 2, 
+    onCreate: (database, v) async {
+      if (kDebugMode) {
+        print('Creating table sku_material...');
+      }
+      await database.execute("CREATE TABLE sku_material ("
+          "sec_id TEXT NOT NULL,"
+          "kode_sku TEXT NOT NULL,"
+          "barcode TEXT NOT NULL,"
+          "nama_material TEXT NOT NULL,"
+          "material_type TEXT NOT NULL,"
+          "category TEXT NOT NULL,"
+          "project TEXT NOT NULL,"
+          "brand TEXT NOT NULL,"
+          "variant TEXT NOT NULL,"
+          "uom TEXT NOT NULL,"
+          "price TEXT NOT NULL,"
+          "price_sell TEXT,"
+          "poin TEXT,"
+          "volume TEXT,"
+          "is_active TEXT,"
+          "createdat TEXT NOT NULL,"
+          "createdby TEXT"
+          ")");
+      if (kDebugMode) {
+        print('Table sku_material created successfully. [DB version $v]');
+      }
+    }, 
+    // onUpgrade: (db, oldVersion, newVersion) async {
+    //     if (oldVersion < 3) {
+    //       await db.execute('ALTER TABLE sku_material ADD COLUMN barcode TEXT NOT NULL');
+    //     }
+    //     if (kDebugMode) {
+    //     print('Table sku_material updated successfully. [DB old version $oldVersion & new version $newVersion]');
+    //   }
+    // }
+  );
 }
 
 Future<int> addMaterialData(DataSkuPro? skuModel) async {
@@ -50,6 +60,7 @@ Future<int> addMaterialData(DataSkuPro? skuModel) async {
   final raw = await db.insert("sku_material", {
     "sec_id": skuModel!.secid,
     "kode_sku": skuModel.kodeSku,
+    "barcode": skuModel.barcode,
     "nama_material": skuModel.namaMaterial,
     "material_type": skuModel.materialType,
     "category": skuModel.category,
@@ -78,7 +89,17 @@ Future<List<DataSkuPro>> searchMaterialByName(String keyword) async {
   final Database db = await initializeMaterialDB();
 
   final List<Map<String, dynamic>> result = await db.rawQuery(
-   "SELECT * FROM sku_material WHERE nama_material LIKE '%$keyword%'",
+   "SELECT * FROM sku_material WHERE nama_material LIKE '%$keyword%' OR barcode LIKE '$keyword%'",
+  );
+
+  return result.map((json) => DataSkuPro.fromJson(json)).toList();
+}
+
+Future<List<DataSkuPro>> searchMaterialByBarcode(String keyword) async {
+  final Database db = await initializeMaterialDB();
+
+  final List<Map<String, dynamic>> result = await db.rawQuery(
+   "SELECT * FROM sku_material WHERE barcode LIKE '%$keyword%'",
   );
 
   return result.map((json) => DataSkuPro.fromJson(json)).toList();

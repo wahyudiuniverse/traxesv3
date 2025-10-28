@@ -12,54 +12,6 @@ class SkuSearchGetX extends GetxController {
   final List<DataSkuSearch> dataResult = [];
   final List<DataSkuPro> dataResults = [];
 
-  // Future<void> skuSearch(String input, VoidCallback onSuccess) async {
-
-  //   dataResult.clear();
-  //   EasyLoading.show(status: "Loading...");
-
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-
-  //   String inputSku = input;
-
-  //   String? projectId = prefs.getString("emp_project");
-
-  //   final dio = Dio();
-  //   dio.interceptors.add(RetryInterceptor(
-  //     dio: dio,
-  //     logPrint: print,
-  //     retries: 1,
-  //     retryDelays: const [
-  //       Duration(seconds: 30),
-  //     ],
-  //   ));
-  //   var baseUrl = url;
-
-  //   Map<String, dynamic> dataSearch = ({
-  //     "keys": inputSku,
-  //     "project": projectId
-  //   });
-
-  //   final response = await dio.post("$baseUrl/user/skusearch", 
-  //   data: dataSearch,
-  //   options: Options(
-  //           followRedirects: false,
-  //           validateStatus: (status) {
-  //             return status! < 500;
-  //           },
-  //           headers: {"Content-Type": "application/json"}));
-    
-  //   if(response.statusCode == 200 || response.statusCode == 201) {
-  //     EasyLoading.dismiss();
-  //     dataResult.addAll(SkuSearchModel.fromJson(response.data).data!.toList());
-  //     onSuccess();
-  //   } else {
-  //     await EasyLoading.showError("Something went wrong", 
-  //     duration: const Duration(seconds: 3)
-  //     );
-  //   }
-    
-  // }
-
  Future<void> loadLocalSkuSearch(String input, VoidCallback onSuccess) async {
   dataResults.clear();
   EasyLoading.show(status: "Loading...", dismissOnTap: true);
@@ -74,9 +26,32 @@ class SkuSearchGetX extends GetxController {
   if (response.isNotEmpty) {
     EasyLoading.dismiss();
     dataResults.addAll(response);
+    debugPrint(response.toString());
     onSuccess();
   } else {
-    await EasyLoading.showError("Data material tidak ada/kosong, coba ketik ulang nama material dengan benar",
+    await EasyLoading.showError("Data material tidak ada/kosong, coba ketik ulang nama material atau barcode dengan benar",
+        duration: const Duration(seconds: 3));
+  }
+}
+
+ Future<void> loadLocalSkuScan(String input, VoidCallback onSuccess) async {
+  dataResults.clear();
+  EasyLoading.show(status: "Loading...", dismissOnTap: true);
+
+  String inputSku = input;
+
+  final response = await DBMaterialHelper().searchMaterialByBarcode(inputSku);
+  if (kDebugMode) {
+    print("respon search --> $response");
+  }
+
+  if (response.isNotEmpty) {
+    EasyLoading.dismiss();
+    dataResults.addAll(response);
+    debugPrint(response.toString());
+    onSuccess();
+  } else {
+    await EasyLoading.showError("Data material tidak ditemukan",
         duration: const Duration(seconds: 3));
   }
 }

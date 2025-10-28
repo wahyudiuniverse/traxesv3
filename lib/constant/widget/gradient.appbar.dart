@@ -7,14 +7,14 @@ class GradientAppBar extends StatelessWidget implements PreferredSizeWidget {
   const GradientAppBar({
     super.key,
     required this.title,
-    this.height = kToolbarHeight,
+    this.height = kToolbarHeight * 1.5,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: height,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -36,14 +36,17 @@ class GradientAppBar extends StatelessWidget implements PreferredSizeWidget {
             },
           ),
           Expanded(
-            child: Center(
-              child: DefaultTextStyle(
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+            child: Transform.translate(
+              offset: const Offset(-21, 0),
+              child: Center(
+                child: DefaultTextStyle(
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  child: title,
                 ),
-                child: title,
               ),
             ),
           ),

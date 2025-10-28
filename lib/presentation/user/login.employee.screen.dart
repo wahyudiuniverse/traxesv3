@@ -223,19 +223,16 @@ class _LoginEmployeeScreenState extends State<LoginEmployeeScreen> {
                                               );
                                             } else {
                                               if (formBuilderKey.currentState!
-                                                  .validate()) {
-                                                SharedPreferences prefs =
-                                                    await SharedPreferences
-                                                        .getInstance();
-                                                prefs.setBool("login", true);
+                                                  .validate()) {                                               
                                                 var data = LoginModel(
                                                   nik: nikController.text,
                                                 );
                                                 loginVM.loginEmployee(
                                                     formData: data,
                                                     onSuccess: () async {
-                                                      Get.offAll(
-                                                          const DashboardScreen());
+                                                       SharedPreferences prefs = await SharedPreferences.getInstance();
+                                                      prefs.setBool("login", true);
+                                                      Get.offAll(const DashboardScreen());
                                                     },
                                                     onFailed: (bodyMessage) {
                                                       String userInputText =
