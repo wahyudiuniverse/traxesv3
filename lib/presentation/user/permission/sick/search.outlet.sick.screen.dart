@@ -79,7 +79,7 @@ class _SickOutletScreenState extends State<SickOutletScreen> {
     return Scaffold(
         appBar: GradientAppBar(
           title: Text(
-            "Riwayat Absen",
+            "Cari Lokasi/Toko",
             style: standarWhiteTextB,
           ),
         ),

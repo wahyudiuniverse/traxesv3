@@ -79,7 +79,7 @@ class _LeaveOutletScreenState extends State<LeaveOutletScreen> {
     return Scaffold(
         appBar: GradientAppBar(
           title: Text(
-            "Riwayat Absen",
+            "Cari Lokasi/Toko",
             style: standarWhiteTextB,
           ),
         ),

@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:dio_smart_retry/dio_smart_retry.dart';
+import 'package:traxes/constant/util/dio.mixin.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:get/get.dart';
-import 'package:traxes/constant/env/config.url.dart';
 import 'package:traxes/model/search/search.model.dart';
 
 class SearchHistoryGetx extends GetxController {
@@ -11,21 +11,20 @@ class SearchHistoryGetx extends GetxController {
   final List<DataSearch> dataResult = [];
   final List<DataSearch> dataApplication = [];
 
-  Future<void> onChangeSearch() async {
+  Future<void> onChangeSearch({bool isHttp = false,}) async {
     dataResult.clear();
     EasyLoading.show(status: "loading");
-    final dio = Dio();
+    final dio = DioClient.getDio(isHttp: isHttp);
     dio.interceptors.add(RetryInterceptor(
       dio: dio,
-      logPrint: print,
+      
       retries: 1,
       retryDelays: const [
         Duration(seconds: 30),
       ],
     ));
-    var baseUrl = url;
     Map<String, dynamic> dataSearch = ({"keys": search});
-    final response = await dio.post("$baseUrl/user/customerbysearch",
+    final response = await dio.post("/user/customerbysearch",
         data: dataSearch,
         options: Options(
             followRedirects: false,
@@ -43,24 +42,23 @@ class SearchHistoryGetx extends GetxController {
     }
   }
 
-  Future<void> onChangeSearchNew(String input,VoidCallback onSuccess) async {
+  Future<void> onChangeSearchNew(String input,VoidCallback onSuccess, {bool isHttp = false,}) async {
     dataResult.clear();
     EasyLoading.show(status: "Loading...");
       String inputNama = input;
 
-    final dio = Dio();
+    final dio = DioClient.getDio(isHttp: isHttp);
     dio.interceptors.add(RetryInterceptor(
       dio: dio,
-      logPrint: print,
+      
       retries: 1,
       retryDelays: const [
         Duration(seconds: 30),
       ],
     ));
-    var baseUrl = url;
     Map<String, dynamic> dataSearch = ({"keys": inputNama});
     // print(input);
-    final response = await dio.post("$baseUrl/user/customerbysearch",
+    final response = await dio.post("/user/customerbysearch",
         data: dataSearch,
         options: Options(
             followRedirects: false,

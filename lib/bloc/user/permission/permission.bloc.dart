@@ -8,7 +8,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:get/get.dart';
 import 'package:traxes/bloc/user/permission/permission.state.dart';
-import 'package:traxes/constant/env/config.url.dart';
 import 'package:traxes/constant/text.style.dart';
 import 'package:traxes/constant/util/dialog.util.dart';
 import 'package:traxes/constant/util/dio.mixin.dart';
@@ -19,8 +18,6 @@ import 'package:traxes/presentation/user/activity.screen.dart';
 
 class PermissionBloc extends Cubit<PermissionState> {
   PermissionBloc() : super(PermissionLoading());
-
-  var baseUrl = url;
 
   void sendPermission(
     CheckInV2Model formData,
@@ -116,7 +113,7 @@ class PermissionBloc extends Cubit<PermissionState> {
 
     try {
       final response = await dio.post(
-        "$baseUrl/transaksi/pushcheckin",
+        "/transaksi/pushcheckin",
         data: permissionSickData,
       );
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -260,7 +257,7 @@ class PermissionBloc extends Cubit<PermissionState> {
 
     try {
       final response = await dio.post(
-        "$baseUrl/transaksi/pushLembur",
+        "/transaksi/pushLembur",
         data: timeoutData,
       );
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -323,7 +320,7 @@ class PermissionBloc extends Cubit<PermissionState> {
 
     try {
       final response = await dio.post(
-        "$baseUrl/transaksi/pushcheckin",
+        "/transaksi/pushcheckin",
         data: offData,
       );
       if (response.statusCode == 200 || response.statusCode == 201) {

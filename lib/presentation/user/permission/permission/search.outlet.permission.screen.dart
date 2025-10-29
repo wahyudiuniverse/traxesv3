@@ -79,7 +79,7 @@ class _PermissionOutletScreenState extends State<PermissionOutletScreen> {
     return Scaffold(
         appBar: GradientAppBar(
           title: Text(
-            "Riwayat Absen",
+            "Cari Lokasi/Toko",
             style: standarWhiteTextB,
           ),
         ),
