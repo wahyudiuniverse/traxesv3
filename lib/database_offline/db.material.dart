@@ -44,14 +44,14 @@ class DBMaterialHelper {
         print('Table sku_material created successfully. [DB version $v]');
       }
     }, 
-    // onUpgrade: (db, oldVersion, newVersion) async {
-    //     if (oldVersion < 3) {
-    //       await db.execute('ALTER TABLE sku_material ADD COLUMN barcode TEXT NOT NULL');
-    //     }
-    //     if (kDebugMode) {
-    //     print('Table sku_material updated successfully. [DB old version $oldVersion & new version $newVersion]');
-    //   }
-    // }
+    onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('ALTER TABLE sku_material ADD COLUMN barcode TEXT NOT NULL');
+        }
+        if (kDebugMode) {
+        print('Table sku_material updated successfully. [DB old version $oldVersion & new version $newVersion]');
+      }
+    }
   );
 }
 
