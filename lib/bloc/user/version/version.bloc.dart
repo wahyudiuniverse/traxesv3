@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:traxes/bloc/user/version/version.state.dart';
-import 'package:traxes/constant/env/config.url.dart';
+import 'package:traxes/constant/util/dio.mixin.dart';
 import 'package:traxes/constant/text.style.dart';
 import 'package:traxes/model/version/version.request.model.dart';
 
@@ -15,7 +15,7 @@ class VersionBloc extends Cubit<VersionState> {
 
   static const int maxRetries = 3;
 
-  void sendVersion({required String version, int retryCount = 0, required BuildContext context}) async {
+  void sendVersion({required String version, int retryCount = 0, required BuildContext context, bool isHttp = false,}) async {
     String? versionApp;
 
     final PackageInfo packageInfo = await PackageInfo.fromPlatform();
@@ -24,7 +24,7 @@ class VersionBloc extends Cubit<VersionState> {
 
     versionApp = version;
 
-    final dio = Dio();
+    final dio = DioClient.getDio(isHttp: isHttp);
     dio.interceptors.add(RetryInterceptor(
       dio: dio,
       logPrint: print,
@@ -33,11 +33,10 @@ class VersionBloc extends Cubit<VersionState> {
         Duration(seconds: 30),
       ],
     ));
-    var baseUrl = url;
 
     Map<String, dynamic> versionData = ({"version": versionApp});
 
-    final response = await dio.post("$baseUrl/user/version",
+    final response = await dio.post("/user/version",
         data: versionData,
         options: Options(
             followRedirects: false,

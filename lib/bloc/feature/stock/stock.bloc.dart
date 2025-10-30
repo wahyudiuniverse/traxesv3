@@ -94,8 +94,6 @@ class StockBloc extends Cubit<StockState> {
       required VoidCallback onSuccess}) async {
     final dio = DioClient.getDio(isHttp: isHttp);
 
-    var baseUrl = url;
-
     Map<String, dynamic> updateStock = ({
       "material_id": formData!.materialId,
       "customer_id": formData.customerId,
@@ -105,7 +103,7 @@ class StockBloc extends Cubit<StockState> {
       "exp_date": formData.expDate
     });
 
-    final response = await dio.post("$baseUrl/transaksi/updatestock",
+    final response = await dio.post("/transaksi/updatestock",
         data: updateStock,
         options: Options(
           receiveTimeout: const Duration(seconds: 30),
@@ -140,10 +138,8 @@ class StockBloc extends Cubit<StockState> {
   void insertMaterial(
       {UpdateStockModel? formData,
       required BuildContext context,
-      required VoidCallback onSuccess}) async {
-    final dio = Dio();
-
-    var baseUrl = url;
+      required VoidCallback onSuccess, bool isHttp = false,}) async {
+    final dio = DioClient.getDio(isHttp: isHttp);
 
     EasyLoading.show(status: "Loading...");
 
@@ -163,7 +159,7 @@ class StockBloc extends Cubit<StockState> {
       "project_id": projectid
     });
 
-    final response = await dio.post("$baseUrl/transaksi/insertstockv2",
+    final response = await dio.post("/transaksi/insertstockv2",
         data: updateStock,
         options: Options(
           sendTimeout: const Duration(seconds: 30),

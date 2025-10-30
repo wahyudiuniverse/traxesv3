@@ -4,17 +4,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:intl/intl.dart';
+import 'package:traxes/constant/util/dio.mixin.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:traxes/bloc/user/callplan/callplan.state.dart';
-import 'package:traxes/constant/env/config.url.dart';
 import 'package:traxes/model/callplan/callplan.model.dart';
 import 'package:traxes/model/callplan/callplan.request.model.dart';
 
 class CallplanBloc extends Cubit<CallplanState> {
   CallplanBloc() : super(CallplanLoading());
 
-  void getCallPlan({CallplanRequestModel? formData}) async {
-    final dio = Dio();
+  void getCallPlan({CallplanRequestModel? formData, bool isHttp = false,}) async {
+    final dio = DioClient.getDio(isHttp: isHttp);
       dio.interceptors.add(RetryInterceptor(
       dio: dio,
       
@@ -23,7 +23,6 @@ class CallplanBloc extends Cubit<CallplanState> {
         Duration(seconds: 30),
       ],
     ));
-    var baseUrl = url;
     String cdate = DateFormat("yyyy-MM-dd").format(DateTime.now());
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
@@ -36,7 +35,7 @@ class CallplanBloc extends Cubit<CallplanState> {
       "date_callplan": cdate
     });
 
-    final response = await dio.post("$baseUrl/download/callplanlist",
+    final response = await dio.post("/download/callplanlist",
     data: callPlanRequest,
     options: Options(
       receiveTimeout: const Duration(seconds: 30),

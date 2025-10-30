@@ -9,7 +9,6 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:traxes/bloc/history/history_order/history.order.state.dart';
-import 'package:traxes/constant/env/config.url.dart';
 import 'package:traxes/constant/text.style.dart';
 import 'package:traxes/constant/util/dialog.util.dart';
 import 'package:traxes/constant/util/dio.mixin.dart';
@@ -39,7 +38,6 @@ class HistoryOrderBloc extends Cubit<HistoryOrderState> {
         Duration(seconds: 10),
       ],
     ));
-    var baseUrl = url;
 
     String? dateTime =
         DateFormat("yyyy-MM-dd").format(selectedDate ?? DateTime.now());
@@ -58,7 +56,7 @@ class HistoryOrderBloc extends Cubit<HistoryOrderState> {
 
     try {
       final response = await dio.post(
-        "$baseUrl/v2/order/historyorderdate",
+        "/v2/order/historyorderdate",
         data: requetHistoryOrder,
       );
       if (response.statusCode == 200 || response.statusCode == 201) {
