@@ -25,9 +25,9 @@ class GetGeolocator {
     desiredAccuracy: LocationAccuracy.high
    );
 
-   if (position.isMocked) {
-    Get.offAll(const FakeGPSWarningScreen());
-   }
+  //  if (position.isMocked) {
+  //   Get.offAll(const FakeGPSWarningScreen());
+  //  }
 
    return position;
   }

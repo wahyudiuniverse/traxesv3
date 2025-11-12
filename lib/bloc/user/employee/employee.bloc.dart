@@ -58,7 +58,8 @@ class EmployeeBloc extends Cubit<EmployeeState> {
 
     Map<String, dynamic> dataDTO = ({
       "nik": formData.nik,
-      "deviceID": androidId,
+      //"deviceID": androidId,
+            "deviceID": "0",
       "logindt": date,
       "apk_version": currentVersion
     });

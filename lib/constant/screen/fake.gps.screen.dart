@@ -21,7 +21,7 @@ class FakeGPSWarningScreen extends StatelessWidget {
                       ),
            Text(
               "Fake GPS Terdeteksi",
-              style: largeBlackText
+              style: largeBlackText 
             ),
            Padding(
              padding: const EdgeInsets.only(left: 8),

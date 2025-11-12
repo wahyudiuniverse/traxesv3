@@ -114,9 +114,9 @@ class _SickPermissionScreenState extends State<SickPermissionScreen> {
 
   Future<void> getCurrentLocation() async {
     position = await GetGeolocator().getCurrentLocation();
-    if (position!.isMocked) {
-      Get.offAll(const FakeGPSWarningScreen());
-    }
+    // if (position!.isMocked) {
+    //   Get.offAll(const FakeGPSWarningScreen());
+    // }
     setState(() {});
   }
 

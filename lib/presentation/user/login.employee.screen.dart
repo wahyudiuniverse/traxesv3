@@ -1,289 +1,242 @@
-// ignore_for_file: use_build_context_synchronously
-
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cool_alert/cool_alert.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:traxes/bloc/user/employee/employee.bloc.dart';
-import 'package:traxes/constant/text.style.dart';
 import 'package:traxes/model/login/login.employee.model.dart';
-import 'package:traxes/presentation/dashboard/dashboard.screen.dart';
+import 'package:traxes/presentation/bottom_navigation/bottom_navigation.screen.dart'; 
+
+// Asumsi halaman setelah login adalah DashboardScreen.
+import 'package:traxes/presentation/dashboard/dashboard.screen.dart'; 
+// Asumsi ini mengarah ke file style Anda yang berisi definisi 'extraSmallBlackText'
+// Catatan: Jika Anda menjalankan kode ini secara independen, Anda mungkin perlu mendefinisikan
+// 'extraSmallBlackText' secara inline atau membuat file style tersebut.
+import 'package:traxes/constant/text.style.dart'; 
 
 class LoginEmployeeScreen extends StatefulWidget {
-  const LoginEmployeeScreen({super.key});
+const LoginEmployeeScreen({super.key});
 
-  @override
-  State<LoginEmployeeScreen> createState() => _LoginEmployeeScreenState();
+@override
+State<LoginEmployeeScreen> createState() => _LoginScreenState();
 }
 
-class _LoginEmployeeScreenState extends State<LoginEmployeeScreen> {
-  final GlobalKey<FormState> formBuilderKey = GlobalKey<FormState>();
-  final nikController = TextEditingController();
-  String enteredText = "";
-  String? versionApp;
+class _LoginScreenState extends State<LoginEmployeeScreen> {
+// 1. Tambahkan Form Key untuk validasi
+final GlobalKey<FormState> _formKey = GlobalKey<FormState>(); 
+final TextEditingController _nipController = TextEditingController();
+final FocusNode _nipFocusNode = FocusNode(); 
+String? versionApp;
 
-  @override
-  void dispose() {
-    super.dispose();
-    nikController.dispose();
-  }
+void getAppVersion() async {
+  final PackageInfo packageInfo = await PackageInfo.fromPlatform();
 
-  void getAppVersion() async {
-    final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+  final version = packageInfo.version;
 
-    final version = packageInfo.version;
+  setState(() {
+    versionApp = version;
+  });
+}
 
-    setState(() {
-      versionApp = version;
-    });
-  }
+@override
+void initState() {
+ super.initState();
+ getAppVersion();
+}
 
-  //  void checkConnectivityAndNavigate() {
-  //   ConnectivityHelper.checkConnectivity(context, () {
-  //     setState(() {
-  //       ConnectivityHelper.hideNoInternetDialog();
-  //     });
-  //   });
-  // }
+@override
+void dispose() {
+ _nipController.dispose();
+ _nipFocusNode.dispose();
+ super.dispose();
+}
+ 
+void _onForgotNIPPressed() {
+  ScaffoldMessenger.of(context).showSnackBar(
+  SnackBar(content: Text("Coming Soon"), duration: const Duration(milliseconds: 500),),
+  );
+}
 
-  @override
-  void initState() {
-    super.initState();
-    getAppVersion();
-  }
+@override
+Widget build(BuildContext context) {
+ // Define a minimal placeholder style if extraSmallBlackText is not defined externally
+ // You should remove this block if your actual style constant is imported correctly.
+ const TextStyle extraSmallBlackText = TextStyle(
+  fontSize: 12, 
+  color: Color(0xFF374151), 
+  fontWeight: FontWeight.w400,
+ );
 
-  @override
-  Widget build(BuildContext context) {
-    final loginVM = context.read<EmployeeBloc>();
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      backgroundColor: const Color(0xFF1C4966),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: SafeArea(
-                child: Form(
-                  key: formBuilderKey,
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.max,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8, top: 20),
-                          child: Container(
-                            decoration: const BoxDecoration(
-                                color: Colors.white, shape: BoxShape.circle),
-                            child: ClipOval(
-                              child: Image.asset(
-                                "assets/images/traxes-icon.png",
-                                width: MediaQuery.of(context).size.width * 0.25,
-                                height:
-                                    MediaQuery.of(context).size.width * 0.25,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(
-                          height: 15,
-                        ),
-                        Text(
-                          "TRAXES",
-                          style: largeWhiteTextB,
-                        ),
-                        const SizedBox(height: 25),
-                        Text(
-                          "Harap masukkan NIP dengan benar",
-                          style: smallWhiteText,
-                        ),
-                        const SizedBox(
-                          height: 40,
-                        ),
-                        Column(
-                          children: [
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
-                              child: Card(
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
-                                color: Colors.white,
-                                child: Column(
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.only(
-                                          top: 15, left: 30, right: 15),
-                                      child: Align(
-                                        alignment: Alignment.centerLeft,
-                                        child: Text("*Masukkan NIP",
-                                            style: smallBlackText),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.only(
-                                          left: 25,
-                                          right: 25,
-                                          top: 20,
-                                          bottom: 20),
-                                      child: TextFormField(
-                                        style: const TextStyle(
-                                            color: Color(0xFF1C4966)),
-                                        cursorColor: const Color(0xFF1C4966),
-                                        validator: (v) {
-                                          if (v!.isEmpty) {
-                                            return "Harap isi NIP";
-                                          } else {
-                                            return null;
-                                          }
-                                        },
-                                        keyboardType: TextInputType.number,
-                                        controller: nikController,
-                                        inputFormatters: [
-                                          LengthLimitingTextInputFormatter(8)
-                                        ],
-                                        onChanged: (value) {
-                                          setState(() {
-                                            enteredText = value;
-                                          });
-                                        },
-                                        decoration: InputDecoration(
-                                          suffixIcon:
-                                              const Icon(Icons.check_box),
-                                          suffixIconColor:
-                                              enteredText.length == 8
-                                                  ? Colors.green
-                                                  : Colors.grey,
-                                          hintText: "NIP",
-                                          hintStyle: const TextStyle(
-                                              color: Colors.grey),
-                                          border: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(5)),
-                                          focusedBorder: OutlineInputBorder(
-                                              borderSide: const BorderSide(
-                                                  color: Color(0xFF1C4966)),
-                                              borderRadius:
-                                                  BorderRadius.circular(5)),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: MediaQuery.of(context).size.width *
-                                          0.8,
-                                      child: ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                              alignment: Alignment.center,
-                                              backgroundColor:
-                                                  const Color(0xFF1C4966),
-                                              shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          5))),
-                                          onPressed: () async {
-                                            var connectivityResult =
-                                                await Connectivity()
-                                                    .checkConnectivity();
+final loginVM = context.read<EmployeeBloc>();
 
-                                            if (connectivityResult.contains(
-                                                ConnectivityResult.none)) {
-                                              showDialog(
-                                                context: context,
-                                                barrierDismissible: false,
-                                                builder:
-                                                    (BuildContext context) {
-                                                  return PopScope(
-                                                    canPop: false,
-                                                    child: AlertDialog(
-                                                      title: Text(
-                                                          'No Internet Connection',
-                                                          style:
-                                                              largeBlackText),
-                                                      content: Text(
-                                                          'Please check your internet connection and try again.',
-                                                          style:
-                                                              standarBlackText),
-                                                      actions: [
-                                                        TextButton(
-                                                          onPressed: () {
-                                                            Navigator.pop(
-                                                                context);
-                                                          },
-                                                          child: Text('OK',
-                                                              style:
-                                                                  smallBlackText),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  );
-                                                },
-                                              );
-                                            } else {
-                                              if (formBuilderKey.currentState!
-                                                  .validate()) {                                               
-                                                var data = LoginModel(
-                                                  nik: nikController.text,
-                                                );
-                                                loginVM.loginEmployee(
-                                                    formData: data,
-                                                    onSuccess: () async {
-                                                       SharedPreferences prefs = await SharedPreferences.getInstance();
-                                                      prefs.setBool("login", true);
-                                                      Get.offAll(const DashboardScreen());
-                                                    },
-                                                    onFailed: (bodyMessage) {
-                                                      String userInputText =
-                                                          nikController.text;
-                                                      CoolAlert.show(
-                                                        context: context,
-                                                        type:
-                                                            CoolAlertType.error,
-                                                        title: "Login gagal",
-                                                        titleTextStyle:
-                                                            largeBlackTextB,
-                                                        text:
-                                                            "$bodyMessage \n NIP: $userInputText",
-                                                        textTextStyle:
-                                                            standarBlackText,
-                                                        confirmBtnText: "OK",
-                                                        confirmBtnColor:
-                                                            const Color(
-                                                                0xFF1C4966),
-                                                      );
-                                                    });
-                                              }
-                                            }
-                                          },
-                                          child: Text(
-                                            "Log in",
-                                            style: smallWhiteTextB,
-                                          )),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
+ return Scaffold(
+  backgroundColor: Colors.white, 
+  body: Stack(
+   children: [
+    // 1. Konten Utama (Dapat Digulir)
+    SafeArea(
+     child: SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 30.0),
+      // 3. Tambahkan Form Widget di sini
+      child: Form(
+       key: _formKey, // Hubungkan dengan form key
+       child: Column(
+        mainAxisAlignment: MainAxisAlignment.start, 
+        crossAxisAlignment: CrossAxisAlignment.stretch, 
+        children: <Widget>[
+         const SizedBox(height: 100), 
+
+         // Logo/Ikon
+         Center(
+          child: Transform.scale(
+           scale: 0.8,
+           child: Image.asset("assets/images/traxes-icon.png", fit: BoxFit.cover, height: 150),
           ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(
-              "Versi : $versionApp",
-              style: smallWhiteText,
-            ),
+         ),
+         
+         const SizedBox(height: 60),
+
+         // Label NIP
+         const Text(
+          'NIP (Nomor Induk Pegawai)',
+          style: TextStyle(
+           fontSize: 14,
+           fontWeight: FontWeight.w600,
+           color: Color(0xFF374151),
           ),
+         ),
+         const SizedBox(height: 8),
+
+         // Input Field NIP (TextFormField dengan validator)
+         TextFormField( // <--- Diubah dari TextField
+          controller: _nipController,
+          focusNode: _nipFocusNode,
+          keyboardType: TextInputType.number, 
+          // 4. Tambahkan validator
+          validator: (value) {
+           if (value == null || value.isEmpty) {
+            return 'NIP tidak boleh kosong';
+           }
+           return null; // Validasi berhasil
+          },
+          decoration: InputDecoration(
+           hintText: 'Masukan NIP anda',
+           hintStyle: TextStyle(color: Colors.grey.shade400),
+           filled: true,
+           fillColor: Colors.grey.shade50, 
+
+           // Border saat tidak error dan tidak fokus
+           border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(5),
+            borderSide: const BorderSide(color: Color(0xFF0D6EFD), width: 1.0), 
+           ),
+           // Border saat fokus
+           focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(5),
+            borderSide: const BorderSide(color: Color(0xFF0D6EFD), width: 1.5), 
+           ),
+           // Border saat ada error
+           errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(5),
+            borderSide: const BorderSide(color: Colors.red, width: 1.5), 
+           ),
+           focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(5),
+            borderSide: const BorderSide(color: Colors.red, width: 1.5), 
+           ),
+           
+           contentPadding: const EdgeInsets.symmetric(
+            vertical: 14.0, horizontal: 16.0),
+          ),
+          style: const TextStyle(
+           color: Color(0xFF374151),
+           fontSize: 16,
+          ),
+         ),
+         const SizedBox(height: 10),
+         // Login Button
+         ElevatedButton(
+          onPressed: () async {
+            if (_formKey.currentState?.validate() ?? false) {
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                prefs.setBool("login", true);
+                var data = LoginModel(nik: _nipController.text);
+                loginVM.loginEmployee(
+                    formData: data,
+                    onSuccess: () async {
+                      Get.offAll(const BottomNavigation());
+                    },
+                    onFailed: (bodyMessage) {
+                      String userInputText = _nipController.text;
+                      CoolAlert.show(
+                        context: context,
+                        type: CoolAlertType.error,
+                        title: "Login gagal",
+                        titleTextStyle: largeBlackTextB,
+                        text: "$bodyMessage \n NIP: $userInputText",
+                        textTextStyle: standarBlackText,
+                        confirmBtnText: "OK",
+                        confirmBtnColor:const Color(0xFF1C4966),
+                      );
+                    });
+              } else {
+                // Opsional: tampilkan pesan kesalahan global jika diperlukan
+                print("Validasi gagal.");
+              }
+          },
+          style: ElevatedButton.styleFrom(
+           backgroundColor: const Color(0xFF0D6EFD), 
+           foregroundColor: Colors.white, 
+           padding: const EdgeInsets.symmetric(vertical: 16),
+           shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(5),
+           ),
+           elevation: 0, 
+          ),
+          child: const Text(
+           'Login',
+           style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+           ),
+          ),
+         ),
+         const SizedBox(height: 10),
+         Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+           onPressed: _onForgotNIPPressed,
+           child: const Text(
+            'Kendala Login?',
+            style: TextStyle(
+             fontSize: 14,
+             color: Color(0xFF0D6EFD), 
+             fontWeight: FontWeight.w600,
+            ),
+           ),
+          ),
+         ),
+         const SizedBox(height: 20),
+
+         // Padding ekstra agar konten tidak tertutup oleh teks copyright
+         const SizedBox(height: 50), 
         ],
+       ),
       ),
-    );
-  }
+     ),
+    ),
+
+    // 2. Teks Copyright
+    Align(
+     alignment: Alignment.bottomCenter,
+     child: Padding(
+      padding: const EdgeInsets.only(bottom: 20.0),
+      child: Text("v$versionApp", style: extraSmallBlackText),
+     ),
+    ),
+   ],
+  ),
+ );
+}
 }

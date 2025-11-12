@@ -135,9 +135,9 @@ class _OvertimeScreenState extends State<OvertimeScreen> {
   Future<void> getCurrentLocation() async {
     position = await GetGeolocator().getCurrentLocation();
     calculateDistanceIn();
-    if (position!.isMocked) {
-      Get.offAll(const FakeGPSWarningScreen());
-    }
+    // if (position!.isMocked) {
+    //   Get.offAll(const FakeGPSWarningScreen());
+    // }
     setState(() {});
   }
 
@@ -606,10 +606,10 @@ class _OvertimeScreenState extends State<OvertimeScreen> {
                                                 return;
                                               }
 
-                                              if (position!.isMocked) {
-                                                Get.offAll(
-                                                    const FakeGPSWarningScreen());
-                                              }
+                                              // if (position!.isMocked) {
+                                              //   Get.offAll(
+                                              //       const FakeGPSWarningScreen());
+                                              // }
                                               var distance = Geolocator
                                                   .distanceBetween(
                                                       double

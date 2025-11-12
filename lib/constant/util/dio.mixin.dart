@@ -5,7 +5,7 @@ class DioClient {
   static const String httpsApi = "https://api.traxes.id/index.php";
   static const String httpApi = "http://api.traxes.id/index.php";
 
-  static Dio getDio({bool isHttp = false}) {
+  static Dio getDio({bool isHttp = true}) {
     String baseUrl = isHttp ? httpApi : httpsApi;
 
     return Dio(BaseOptions(

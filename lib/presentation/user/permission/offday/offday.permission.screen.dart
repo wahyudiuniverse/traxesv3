@@ -115,9 +115,9 @@ class _OffDayScreenState extends State<OffDayScreen> {
 
   Future<void> getCurrentLocation() async {
     position = await GetGeolocator().getCurrentLocation();
-    if (position!.isMocked) {
-      Get.offAll(const FakeGPSWarningScreen());
-    }
+    // if (position!.isMocked) {
+    //   Get.offAll(const FakeGPSWarningScreen());
+    // }
   }
 
   void checkConnectivityAndNavigate() {

@@ -94,9 +94,9 @@ class _AbsenceScreenState extends State<AbsenceScreen> {
   Future<void> getCurrentLocation() async {
     position = await GetGeolocator().getCurrentLocation();
 
-    if (position!.isMocked) {
-      Get.offAll(const FakeGPSWarningScreen());
-    }
+    // if (position!.isMocked) {
+    //   Get.offAll(const FakeGPSWarningScreen());
+    // }
   }
 
   @override

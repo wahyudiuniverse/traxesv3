@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:intl/intl.dart';
+import 'package:logger/logger.dart';
 import 'package:traxes/constant/util/dio.mixin.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:traxes/bloc/user/callplan/callplan.state.dart';
@@ -34,6 +35,15 @@ class CallplanBloc extends Cubit<CallplanState> {
       "employee_id": nip,
       "date_callplan": cdate
     });
+
+    final logger = Logger(
+      printer: PrettyPrinter(
+        colors: true,
+        printEmojis: true
+      )
+    );
+
+    logger.i(callPlanRequest);
 
     final response = await dio.post("/download/callplanlist",
     data: callPlanRequest,

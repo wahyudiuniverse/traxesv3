@@ -120,9 +120,9 @@ class _SubmitAbsenceScreenState extends State<SubmitAbsenceScreen> {
   Future<void> getCurrentLocation() async {
     position = await GetGeolocator().getCurrentLocation();
     calculateDistanceIn();
-    if (position!.isMocked) {
-      Get.offAll(const FakeGPSWarningScreen());
-    }
+    // if (position!.isMocked) {
+    //   Get.offAll(const FakeGPSWarningScreen());
+    // }
     setState(() {});
   }
 
@@ -489,9 +489,11 @@ class _SubmitAbsenceScreenState extends State<SubmitAbsenceScreen> {
                               selectedValue == null) {
                             EasyLoading.showError("Wajib isi pilihan transport",
                                 duration: const Duration(seconds: 3));
-                          } else if (position!.isMocked) {
-                            Get.offAll(const FakeGPSWarningScreen());
-                          } else if (currentDistanceIn == null) {
+                          } 
+                          // else if (position!.isMocked) {
+                          //   Get.offAll(const FakeGPSWarningScreen());
+                          // } 
+                          else if (currentDistanceIn == null) {
                             CoolAlert.show(
                               context: context,
                               type: CoolAlertType.error,

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:traxes/constant/text.style.dart';
-import 'package:traxes/presentation/dashboard/dashboard.screen.dart';
+import 'package:traxes/presentation/bottom_navigation/bottom_navigation.screen.dart';
 import 'package:traxes/presentation/user/activity.screen.dart';
 import 'package:traxes/presentation/user/login.employee.screen.dart';
 
@@ -34,9 +34,10 @@ class _BoardingScreenState extends State<BoardingScreen> {
         Get.offAll(const LoginEmployeeScreen());
       } else {
         if (checkedIn != 1) {
-          Get.offAll(const DashboardScreen());
+          Get.offAll(const BottomNavigation());
         } else {
-          Get.offAll(const EmployeeScreen());
+          Get.offAll(const BottomNavigation());
+          Get.to(const EmployeeScreen());
         }
       }
     });

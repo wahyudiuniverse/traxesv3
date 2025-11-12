@@ -1,534 +1,353 @@
-// ignore_for_file: sort_child_properties_last, use_build_context_synchronously, duplicate_ignore
+// ignore_for_file: sort_child_properties_last, use_build_context_synchronously, duplicate_ignore, lines_longer_than_80_chars
 
-import 'package:cool_alert/cool_alert.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:traxes/bloc/user/employee/employee.bloc.dart';
-import 'package:traxes/bloc/user/employee/employee.state.dart';
-import 'package:traxes/constant/widget/card.dart';
-// import 'package:traxes/constant/widget/gradient.appbar.dart';
-import 'package:traxes/constant/gps/location.dart';
-import 'package:traxes/constant/text.style.dart';
 import 'package:traxes/constant/screen/visit.screen.dart';
-import 'package:traxes/presentation/dashboard/dashboard.screen.dart';
-import 'package:traxes/presentation/feature/biils/bills.screen.dart';
-import 'package:traxes/presentation/feature/competitor/competitor.screen.dart';
 import 'package:traxes/presentation/feature/display/display.screen.dart';
-import 'package:traxes/presentation/feature/display_mbd/admin/verify.mbd.screen.dart';
-import 'package:traxes/presentation/feature/display_mbd/SMD/display.mbd.screen.dart';
-import 'package:traxes/presentation/feature/outlet/add.outlet.screen.dart';
-import 'package:traxes/presentation/feature/planogram/planogram.screen.dart';
-import 'package:traxes/presentation/feature/price_tag/price.tag.screen.dart';
 import 'package:traxes/presentation/feature/sku/order.main.screen.dart';
 import 'package:traxes/presentation/feature/stock_product/stock.main.screen.dart';
+// Import-import lain yang mungkin Anda butuhkan di file ini:
+// ...
 
+// --- DATA MODEL UNTUK MENU ITEMS ---
+class MenuItem {
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  MenuItem({required this.icon, required this.title, required this.onTap});
+}
+
+// -------------------------------------------------------------------
+// --- WIDGET MENU CARD KUSTOM (STATEFUL) --- (Tidak ada perubahan di sini)
+// -------------------------------------------------------------------
+class MenuCard extends StatefulWidget {
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  const MenuCard({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
+
+  @override
+  State<MenuCard> createState() => _MenuCardState();
+}
+
+class _MenuCardState extends State<MenuCard> {
+  // State untuk melacak apakah kartu sedang ditekan
+  bool _isPressed = false;
+  
+  // Definisi warna
+  static const Color _defaultIconColor = Color(0xFF616161); // Abu-abu gelap (default)
+  static const Color _tappedIconColor = Color(0xFF0D6EFD); // Biru (saat ditekan)
+  static const Color _defaultTextColor = Color(0xFF333333); // Warna teks default
+  static const Color _tappedTextColor = Color(0xFF0D6EFD); // Biru (saat ditekan)
+
+  @override
+  Widget build(BuildContext context) {
+    const borderRadius = BorderRadius.all(Radius.circular(8));
+
+    // Tentukan warna dinamis
+    final iconColor = _isPressed ? _tappedIconColor : _defaultIconColor;
+    final textColor = _isPressed ? _tappedTextColor : _defaultTextColor;
+
+    return Card(
+      elevation: 0, 
+      shape: RoundedRectangleBorder(borderRadius: borderRadius),
+      // Gunakan GestureDetector untuk menangkap status penekanan
+      child: GestureDetector(
+        onTapDown: (_) {
+          // Saat mulai ditekan
+          setState(() {
+            _isPressed = true;
+          });
+        },
+        onTapUp: (_) {
+          // Saat dilepas, beri penundaan agar efek terlihat
+          Future.delayed(const Duration(milliseconds: 100), () {
+            if(mounted) {
+              setState(() {
+                _isPressed = false;
+              });
+            }
+          });
+          widget.onTap(); // Panggil fungsi onTap utama
+        },
+        onTapCancel: () {
+          // Jika sentuhan dibatalkan
+          setState(() {
+            _isPressed = false;
+          });
+        },
+        
+        child: InkWell(
+          borderRadius: borderRadius,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: borderRadius,
+              border: Border.all(color: Colors.grey.shade200, width: 1),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Icon(
+                  widget.icon,
+                  size: 36.0,
+                  color: iconColor, // <--- Icon menggunakan warna dinamis
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  widget.title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: textColor, // <--- Teks menggunakan warna dinamis
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// -------------------------------------------------------------------
+// --- WIDGET UTAMA (MAIN SCREEN) ---
+// -------------------------------------------------------------------
 class EmployeeScreen extends StatefulWidget {
-  final String? nik;
-  const EmployeeScreen({super.key, this.nik});
+  const EmployeeScreen({super.key});
 
   @override
   State<EmployeeScreen> createState() => _EmployeeScreenState();
 }
 
 class _EmployeeScreenState extends State<EmployeeScreen> {
-  String? nik;
-  Position? position;
-  Placemark? placemark;
-  String? customerName;
-  String? customerId;
-  String? address;
-  String? jabatan;
-
-  Future<void> getPermission() async {
-    LocationPermission permission;
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    } else if (permission == LocationPermission.denied) {
-      return;
-    }
-  }
-
-  void callJabatan() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      jabatan = prefs.getString("jabatan").toString();
-    });
-  }
-
-  void callNik() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      nik = prefs.getString("empid").toString();
-    });
-  }
-
-  void getCustomerName() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      customerName = prefs.getString("customerName").toString();
-    });
-  }
-
-  void getCustomerId() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      customerId = prefs.getString("customerId").toString();
-    });
-  }
-
-  void getAddress() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      address = prefs.getString("address").toString();
-    });
-  }
-
-  getCurrentLocation() async {
-    position = await GetGeolocator().getCurrentLocation();
-    await GetGeolocator()
-        .getAddressLatLang(position!)
-        .then((value) => {placemark = value});
-  }
+  // Tambahkan customerId ke state
+  String _customerName = "Memuat Nama Toko...";
+  String _customerAddress = "Memuat Alamat...";
+  String _customerId = ""; // Nilai default string kosong/tidak valid
+  bool _isLoadingData = true;
 
   @override
   void initState() {
     super.initState();
-    getEmployee();
-    callNik();
-    getCurrentLocation();
-    getCustomerName();
-    getAddress();
-    getCustomerId();
-    getPermission();
-    callJabatan();
-    placemark;
+    _loadStoreData();
   }
 
-  void getEmployee() async {
-    context.read<EmployeeBloc>().employeeLoad();
+  // --- FUNGSI UNTUK MEMUAT DATA DARI SHARED PREFERENCES ---
+  Future<void> _loadStoreData() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    
+    const defaultName = "Nama Toko Tidak Ditemukan";
+    const defaultAddress = "Alamat Tidak Ditemukan";
+    const defaultCustomerId = ""; // Kunci default untuk ID
+
+    // Ambil data
+    final name = prefs.getString('customerName');
+    final address = prefs.getString('address');
+    final id = prefs.getString('customerId'); // <--- Ambil customerId
+
+    if (mounted) {
+      setState(() {
+        _customerName = name ?? defaultName;
+        _customerAddress = address ?? defaultAddress;
+        _customerId = id ?? defaultCustomerId; // <--- Set customerId
+        _isLoadingData = false;
+      });
+    }
+  }
+
+  // --- FUNGSI UNTUK MENANGANI CHECK-OUT ---
+  void _onCheckoutPressed() {
+     Get.to(const VisitScreen());
+  }
+
+  List<MenuItem> _buildMenuItems(BuildContext context) {
+    void showSnackbar(String title) {
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(title), duration: const Duration(milliseconds: 500),),
+      );
+    }
+
+    return [
+      MenuItem(
+        icon: Icons.shopping_cart_outlined,
+        title: 'Order / Sell Out',
+        onTap: () => Get.to(const OrderMainScreen()),
+      ),
+      MenuItem(
+        icon: Icons.inventory_2_outlined,
+        title: 'Stock',
+        onTap: () => Get.to(const StockMainScreen()),
+      ),
+      MenuItem(
+        icon: Icons.label_outline,
+        title: 'Pricing',
+        onTap: () => showSnackbar('Coming Soon'),
+      ),
+      MenuItem(
+        icon: Icons.remove_red_eye_outlined,
+        title: 'Display',
+        // KIRIM DATA customerName, address, dan customerId ke DisplayScreen
+        onTap: () {
+          Get.to(() => DisplayScreen(
+            customerName: _customerName, 
+            address: _customerAddress, 
+            customerId: _customerId, // <--- customerId dari SharedPreferences
+          ));
+        },
+      ),
+      MenuItem(
+        icon: Icons.post_add, 
+        title: 'Retur',
+        onTap: () => showSnackbar('Coming Soon'),
+      ),
+      MenuItem(
+        icon: Icons.store_outlined,
+        title: 'Program Store',
+        onTap: () => showSnackbar('Coming Soon'),
+      ),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
+    final menuItems = _buildMenuItems(context);
+
+    // Konten Banner
+    final storeContent = Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        const Icon(
+            Icons.store_mall_directory_outlined,
+            color: Color(0xFF0D6EFD),
+            size: 24,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                    _customerName, // Nama dari State
+                    style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF333333),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                    _customerAddress, // Alamat dari State
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.grey.shade600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                ),
+              ],
+          ),
+        ),
+      ],
+    );
+
     return Scaffold(
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: SafeArea(
-            child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.only(
-                  left: 16, right: 16, top: 20, bottom: 16),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF661C63), // Deep purple
-                    Color(0xFF1C4966), // Dark pink
-                  ],
-                ), // AppBar background color
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child:  Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  InkWell(onTap: () {
-                    Get.to(const DashboardScreen());
-                  },  child:  const Icon(FontAwesomeIcons.arrowLeft, color: Colors.white)), // Left icon
-                  Text(
-                    'Aktivitas',
-                    style: standarWhiteTextB
-                  ),
-                  const Icon(Icons.notifications, color: Colors.white), // Right icon
-                ],
-              ),
-            ),
-            BlocBuilder<EmployeeBloc, EmployeeState>(
-              builder: (context, stateEmployee) {
-                if (stateEmployee is EmployeeLoaded) {
-                  return Column(children: [
-                    InkWell(
-                      // onTap: () {
-                      //   Get.offAll(const DashboardScreen());
-                      // },
-                      child: Container(
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(15)),
-                        child: ListView.builder(
-                          itemCount: stateEmployee.data.length,
-                          shrinkWrap: true,
-                          physics: const BouncingScrollPhysics(),
-                          itemBuilder: (context, i) {
-                            var employee = stateEmployee.data[0];
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 20, horizontal: 15),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(15),
-                                  gradient: const LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      Color(
-                                          0xFF661C63), // Start color (vibrant purple)
-                                      Color(0xFF1C4966), // End color
-                                    ],
-                                  ),
-                                ),
-                                padding: const EdgeInsets.all(15),
-                                child: Row(
-                                  children: [
-                                    Image.asset(
-                                      "assets/images/blue-person.png",
-                                      color: Colors.white,
-                                      width: 80,
-                                      height: 80,
-                                      fit: BoxFit.cover,
-                                    ),
-                                    const SizedBox(width: 15),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            employee.fullname.toString(),
-                                            style: smallWhiteText,
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 1,
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            employee.employeeId.toString(),
-                                            style: standarWhiteText,
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 1,
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            employee.typeId.toString(),
-                                            style: standarWhiteText,
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 1,
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            customerName != null &&
-                                                    customerName!.isNotEmpty
-                                                ? customerName!
-                                                : "",
-                                            style: smallWhiteText,
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 2,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(
-                      height: 35,
-                    ),
-                    GridView.count(
-                      crossAxisCount: 3,
-                      shrinkWrap: true,
-                      mainAxisSpacing: 4,
-                      crossAxisSpacing: 4,
-                      padding: const EdgeInsets.only(left: 8, right: 8),
-                      children: [
-                        buildMenuCard(
-                            onTap: () {
-                              Get.to(const VisitScreen());
-                            },
-                            icon: FontAwesomeIcons.fingerprint,
-                            text: "Check-in/out",
-                            color: const Color(0xFF50C878),
-                            textColor: smallWhiteText),
-                        buildMenuCard(
-                            onTap: () {
-                              Get.to(AddOutletScreen(
-                                position: position,
-                                placemark: placemark,
-                              ));
-                            },
-                            icon: FontAwesomeIcons.shop,
-                            text: "Tambah Lokasi",
-                            color: const Color(0xFFF4C430),
-                            textColor: smallWhiteText),
-                        buildMenuCard(
-                            onTap: () async {
-                              SharedPreferences prefs =
-                                  await SharedPreferences.getInstance();
-
-                              var checkCheckin = prefs.getInt("getIn");
-
-                              if (checkCheckin != 1) {
-                                // ignore: use_build_context_synchronously
-                                CoolAlert.show(
-                                    backgroundColor: const Color(0xFFFFFFFF),
-                                    title: "Check-in terlebih dahulu",
-                                    confirmBtnColor: const Color(0xFF661C63),
-                                    confirmBtnText: "Kembali",
-                                    confirmBtnTextStyle: smallWhiteText,
-                                    titleTextStyle: standarBlackText,
-                                    context: context,
-                                    type: CoolAlertType.error);
-                              } else {
-                                Get.to(const OrderMainScreen());
-                              }
-                            },
-                            icon: FontAwesomeIcons.cartShopping,
-                            text: "Order/Sell-out",
-                            color: const Color(0xFFE3735E),
-                            textColor: smallWhiteText),
-                        buildMenuCard(
-                            onTap: () async {
-                              SharedPreferences prefs =
-                                  await SharedPreferences.getInstance();
-
-                              var checkCheckin = prefs.getInt("getIn");
-
-                              if (checkCheckin != 1) {
-                                // ignore: use_build_context_synchronously
-                                CoolAlert.show(
-                                    backgroundColor: const Color(0xFFFFFFFF),
-                                    title: "Check-in terlebih dahulu",
-                                    confirmBtnColor: const Color(0xFF661C63),
-                                    confirmBtnText: "Kembali",
-                                    confirmBtnTextStyle: smallWhiteText,
-                                    titleTextStyle: standarBlackText,
-                                    context: context,
-                                    type: CoolAlertType.error);
-                              } else {
-                                Get.to(const StockMainScreen());
-                              }
-                            },
-                            icon: FontAwesomeIcons.boxesStacked,
-                            text: "Stock/Sell-in",
-                            color: const Color(0xFF702963),
-                            textColor: smallWhiteText),
-                        buildMenuCard(
-                            onTap: () async {
-                              SharedPreferences prefs =
-                                  await SharedPreferences.getInstance();
-
-                              var checkCheckin = prefs.getInt("getIn");
-
-                              if (checkCheckin != 1) {
-                                // ignore: use_build_context_synchronously
-                                CoolAlert.show(
-                                    backgroundColor: const Color(0xFFFFFFFF),
-                                    title: "Check-in terlebih dahulu",
-                                    confirmBtnColor: const Color(0xFF661C63),
-                                    confirmBtnText: "Kembali",
-                                    confirmBtnTextStyle: smallWhiteText,
-                                    titleTextStyle: standarBlackText,
-                                    context: context,
-                                    type: CoolAlertType.error);
-                              } else {
-                                if (jabatan == "ADMIN" ||
-                                    jabatan == "ADMIN PROJECT") {
-                                  Get.to(const VerifyMbdScreen());
-                                } else {
-                                  Get.to(DisplayMbdScreen(
-                                    customerName: customerName,
-                                    address: address,
-                                    customerId: customerId,
-                                  ));
-                                }
-                              }
-                            },
-                            icon: FontAwesomeIcons.table,
-                            text:
-                                jabatan == "ADMIN" || jabatan == "ADMIN PROJECT"
-                                    ? "Verifikasi MBD"
-                                    : "Display MBD",
-                            color: const Color(0xFF242375),
-                            textColor: smallWhiteText),
-                        buildMenuCard(
-                            onTap: () async {
-                              SharedPreferences prefs =
-                                  await SharedPreferences.getInstance();
-
-                              var checkCheckin = prefs.getInt("getIn");
-
-                              if (checkCheckin != 1) {
-                                // ignore: use_build_context_synchronously
-                                CoolAlert.show(
-                                    backgroundColor: const Color(0xFFFFFFFF),
-                                    title: "Check-in terlebih dahulu",
-                                    confirmBtnColor: const Color(0xFF661C63),
-                                    confirmBtnText: "Kembali",
-                                    confirmBtnTextStyle: smallWhiteText,
-                                    titleTextStyle: standarBlackText,
-                                    context: context,
-                                    type: CoolAlertType.error);
-                              } else {
-                                Get.to(BillsScreen(
-                                  customerName: customerName,
-                                  address: address,
-                                  customerId: customerId,
-                                ));
-                              }
-                            },
-                            icon: FontAwesomeIcons.paperclip,
-                            text: "Struk",
-                            color: const Color(0xFFAA336A),
-                            textColor: smallWhiteText),
-                        buildMenuCard(
-                            onTap: () async {
-                              SharedPreferences prefs =
-                                  await SharedPreferences.getInstance();
-
-                              var checkCheckin = prefs.getInt("getIn");
-
-                              if (checkCheckin != 1) {
-                                // ignore: use_build_context_synchronously
-                                CoolAlert.show(
-                                    backgroundColor: const Color(0xFFFFFFFF),
-                                    title: "Check-in terlebih dahulu",
-                                    confirmBtnColor: const Color(0xFF661C63),
-                                    confirmBtnText: "Kembali",
-                                    confirmBtnTextStyle: smallWhiteText,
-                                    titleTextStyle: standarBlackText,
-                                    context: context,
-                                    type: CoolAlertType.error);
-                              } else {
-                                Get.to(DisplayScreen(
-                                  customerName: customerName,
-                                  address: address,
-                                  customerId: customerId,
-                                ));
-                              }
-                            },
-                            icon: FontAwesomeIcons.table,
-                            text: "Display",
-                            color: const Color(0xFF008080),
-                            textColor: smallWhiteText),
-                        buildMenuCard(
-                            onTap: () async {
-                              SharedPreferences prefs =
-                                  await SharedPreferences.getInstance();
-
-                              var checkCheckin = prefs.getInt("getIn");
-
-                              if (checkCheckin != 1) {
-                                // ignore: use_build_context_synchronously
-                                CoolAlert.show(
-                                    backgroundColor: const Color(0xFFFFFFFF),
-                                    title: "Check-in terlebih dahulu",
-                                    confirmBtnColor: const Color(0xFF661C63),
-                                    confirmBtnText: "Kembali",
-                                    confirmBtnTextStyle: smallWhiteText,
-                                    titleTextStyle: standarBlackText,
-                                    context: context,
-                                    type: CoolAlertType.error);
-                              } else {
-                                Get.to(PlanogramScreen(
-                                  customerName: customerName,
-                                  address: address,
-                                  customerId: customerId,
-                                ));
-                              }
-                            },
-                            icon: FontAwesomeIcons.tablet,
-                            text: "Planogram",
-                            color: const Color(0xFF436EA2),
-                            textColor: smallWhiteText),
-                        buildMenuCard(
-                            onTap: () async {
-                              SharedPreferences prefs =
-                                  await SharedPreferences.getInstance();
-
-                              var checkCheckin = prefs.getInt("getIn");
-
-                              if (checkCheckin != 1) {
-                                // ignore: use_build_context_synchronously
-                                CoolAlert.show(
-                                    backgroundColor: const Color(0xFFFFFFFF),
-                                    title: "Check-in terlebih dahulu",
-                                    confirmBtnColor: const Color(0xFF661C63),
-                                    confirmBtnText: "Kembali",
-                                    confirmBtnTextStyle: smallWhiteText,
-                                    titleTextStyle: standarBlackText,
-                                    context: context,
-                                    type: CoolAlertType.error);
-                              } else {
-                                Get.to(PriceTagScreen(
-                                  customerName: customerName,
-                                  address: address,
-                                  customerId: customerId,
-                                ));
-                              }
-                            },
-                            icon: FontAwesomeIcons.tag,
-                            text: "Price Tag",
-                            color: const Color(0xFF40B5AD),
-                            textColor: smallWhiteText),
-                        buildMenuCard(
-                            onTap: () async {
-                              SharedPreferences prefs =
-                                  await SharedPreferences.getInstance();
-
-                              var checkCheckin = prefs.getInt("getIn");
-
-                              if (checkCheckin != 1) {
-                                // ignore: use_build_context_synchronously
-                                CoolAlert.show(
-                                    backgroundColor: const Color(0xFFFFFFFF),
-                                    title: "Check-in terlebih dahulu",
-                                    confirmBtnColor: const Color(0xFF661C63),
-                                    confirmBtnText: "Kembali",
-                                    confirmBtnTextStyle: smallWhiteText,
-                                    titleTextStyle: standarBlackText,
-                                    context: context,
-                                    type: CoolAlertType.error);
-                              } else {
-                                Get.to(CompetitorScreen(
-                                  customerName: customerName,
-                                  address: address,
-                                  customerId: customerId,
-                                ));
-                              }
-                            },
-                            icon: FontAwesomeIcons.triangleExclamation,
-                            text: "Kompetitor",
-                            color: const Color(0xFF800020),
-                            textColor: smallWhiteText),
-                      ],
-                    ),
-                  ]);
-                } else {
-                  return const Center(
-                    child: CircularProgressIndicator(),
+      appBar: AppBar(
+        toolbarHeight: 70.0, 
+        
+        title: Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: _isLoadingData
+                ? const Center(child: LinearProgressIndicator(color: Color(0xFF0D6EFD)))
+                : storeContent,
+        ),
+        
+        titleSpacing: 0, 
+        
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 1,
+      ),
+      
+      backgroundColor: Colors.grey.shade50,
+      
+      // Menggunakan Column untuk menempatkan GridView (dengan Expanded) dan tombol di bawahnya
+      body: Column(
+        children: [
+          // 1. GridView Konten (Menu Items)
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: GridView.count(
+                crossAxisCount: 2, 
+                crossAxisSpacing: 12.0, 
+                mainAxisSpacing: 12.0, 
+                childAspectRatio: 1.0, 
+                shrinkWrap: true, // WAJIB: Jika GridView ada dalam Column atau ListView
+                physics: const AlwaysScrollableScrollPhysics(), // Memungkinkan GridView digulir
+                
+                children: menuItems.map((item) {
+                  return MenuCard(
+                    icon: item.icon,
+                    title: item.title,
+                    onTap: item.onTap,
                   );
-                }
-              },
+                }).toList(),
+              ),
             ),
-          ],
-        )),
+          ),
+
+          // 2. Button Check-out di bagian bawah
+          Container(
+            padding: const EdgeInsets.all(16.0),
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  offset: Offset(0, -2),
+                  blurRadius: 6,
+                ),
+              ],
+            ),
+            child: ElevatedButton.icon(
+              onPressed: _onCheckoutPressed,
+              icon: const Icon(Icons.logout, color: Colors.white),
+              label: const Text(
+                'Check-out',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade700, // Warna merah untuk Check-out
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

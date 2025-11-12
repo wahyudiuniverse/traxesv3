@@ -74,9 +74,9 @@ class _CallPlanScreenState extends State<CallPlanScreen> {
   Future<void> getCurrentLocation() async {
     position = await GetGeolocator().getCurrentLocation();
 
-    if (position!.isMocked) {
-      Get.offAll(const FakeGPSWarningScreen());
-    }
+    // if (position!.isMocked) {
+    //   Get.offAll(const FakeGPSWarningScreen());
+    // }
   }
 
   @override

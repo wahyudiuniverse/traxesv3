@@ -1,25 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:slide_to_act/slide_to_act.dart';
 import 'package:traxes/bloc/user/employee/employee.bloc.dart';
 import 'package:traxes/bloc/user/employee/employee.state.dart';
 import 'package:traxes/constant/gps/location.dart';
 import 'package:traxes/constant/screen/download.sku.dart';
 import 'package:traxes/constant/text.style.dart';
-import 'package:traxes/presentation/feature/absence/absence.screen.dart';
-import 'package:traxes/presentation/feature/display_mbd/admin/verify.mbd.screen.dart';
+import 'package:traxes/model/search/search.model.dart';
+import 'package:traxes/presentation/dashboard/dashboard.controller.dart';
 import 'package:traxes/presentation/feature/outlet/add.outlet.screen.dart';
 import 'package:traxes/presentation/history/history_absence/history.absence.dart';
 import 'package:traxes/presentation/history/history_order/history.order.dart';
 import 'package:traxes/presentation/user/activity.screen.dart';
-import 'package:traxes/presentation/user/permission/main.permission.screen.dart';
-import 'package:traxes/presentation/user/permission/overtime/overtime.screen.dart';
-import 'package:traxes/presentation/user/profile.dart';
+import 'package:traxes/presentation/feature/absence/check-in/history.outlet.screen.dart';
+import 'package:traxes/presentation/feature/absence/absence.screen.dart';
+import 'package:traxes/presentation/feature/callplan/plan.screen.dart';
+
+// Placeholder untuk import yang hilang (gunakan yang asli dari project Anda)
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -29,177 +29,454 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  Position? position;
-  Placemark? placemark;
+  Position? _position;
+  Placemark? _placemark;
   int? checkedIn;
+  String? customerName;
+  String? customerAddress;
 
-  Future<void> getPermission() async {
-    LocationPermission permission;
-    permission = await Geolocator.checkPermission();
+  // Variabel ini didefinisikan agar dapat diakses oleh child widget (LocationListContent)
+  Position? get currentPosition => _position;
+  Placemark? get currentPlacemark => _placemark;
+
+  Future<void> initializeLocation() async {
+    LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-    } else if (permission == LocationPermission.denied) {
-      return;
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+        return; 
+      }
     }
-  }
 
-  getCurrentLocation() async {
-    position = await GetGeolocator().getCurrentLocation();
-    await GetGeolocator()
-        .getAddressLatLang(position!)
-        .then((value) => {placemark = value});
+    Position? currentPositionTemp;
+    Placemark? currentPlacemarkTemp;
+
+    try {
+      // Asumsi GetGeolocator adalah class yang benar untuk mendapatkan lokasi
+      currentPositionTemp = await GetGeolocator().getCurrentLocation(); 
+      
+      if (currentPositionTemp != null) {
+        currentPlacemarkTemp = await GetGeolocator().getAddressLatLang(currentPositionTemp);
+      }
+    } catch (e) {
+      print("Error getting location: $e");
+    }
+
+    if (mounted) {
+      setState(() {
+        _position = currentPositionTemp;
+        _placemark = currentPlacemarkTemp;
+      });
+    }
   }
 
   void checkCheckin() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      checkedIn = prefs.getInt("getIn");
-    });
+    if (mounted) {
+      setState(() {
+        checkedIn = prefs.getInt("getIn");
+      });
+    }
+  }
+  
+
+  @override
+  void initState() {
+    super.initState();
+
+    checkCheckin();
+    initializeLocation();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return Scaffold(
+      body: SafeArea(
+        child: SingleChildScrollView( 
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 15.0),
+            child: Column(
+              children: [
+                SizedBox(height: screenHeight * 0.03),                 
+                const ProfileSection(),
+                Visibility(
+                  visible: checkedIn == 1,
+                  child: Column(
+                    children: [
+                      const StatusCard(), 
+                      SizedBox(height: screenHeight * 0.020),
+                    ],
+                  ),
+                ),
+                const InfoCardRow(),
+                SizedBox(height: screenHeight * 0.020),
+                LocationListContent(
+                  parentPosition: _position,
+                  parentPlacemark: _placemark,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+class StatusCard extends StatefulWidget {
+  const StatusCard({super.key});
+
+  @override
+  State<StatusCard> createState() => _StatusCardState();
+}
+class _StatusCardState extends State<StatusCard> {
+  int? checkedIn;
+  String customerName = "Memuat...";
+  String address = "Memuat lokasi...";
+
+  void checkCheckedIn() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+        setState(() {
+          checkedIn = prefs.getInt("getIn");
+          customerName = prefs.getString("customerName") ?? "Lokasi Tidak Diketahui";
+          address = prefs.getString("address") ?? "Alamat tidak tersedia";
+        });
+    }
   }
 
   @override
   void initState() {
     super.initState();
-    checkCheckin();
-    getPermission();
-    getCurrentLocation();
+    checkCheckedIn();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final screenWidth = constraints.maxWidth;
-            final screenHeight = constraints.maxHeight;
-            final isLandscape = screenWidth > screenHeight;
-            final totalGrid = isLandscape && screenWidth > 700 ? 3 : 3;
+    const Color darkBlue = Color(0xFF003366); 
+    const Color lightText = Colors.white;
 
-            return SingleChildScrollView(
-              child: Column(
+    return Padding(
+      padding: const EdgeInsets.all(10.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: darkBlue,
+          borderRadius: BorderRadius.circular(5),
+        ),
+        padding: const EdgeInsets.all(15.0),
+        child: InkWell  (
+          onTap: () {
+            //Get.to(const PlanScreen());
+            // Get.to(const HistoryOutletScreen());
+            // Get.to(const AbsenceScreen());
+            Get.to(const EmployeeScreen());
+            // Get.to(const HistoryAbsenceScreen());
+            // Get.to(const HistoryOrderScreen());
+            
+            
+            // Get.to(AddOutletScreen(
+            //                     position: position,
+            //                     placemark: placemark,
+            //                   ));
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              // Teks 1: Active Check-in at
+              const Text(
+                'Active Check-in at',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 4.0),
+                child: Divider(
+                  color: Colors.white30,
+                  height: 1,
+                  thickness: 1,
+                ),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  SizedBox(height: screenHeight * 0.05),
-                  const ProfileSection(),
-                  SizedBox(height: screenHeight * 0.03),
-                  const DownloadMaterialCard(),
-                  SizedBox(height: screenHeight * 0.025),
-                  const MetricsRow(),
-                  SizedBox(height: screenHeight * 0.03),
-                  checkedIn != 1
-                      ? Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                          child: SlideAction(
-                            text: "Geser untuk check-in",
-                            sliderRotate: false,
-                            textStyle: largeBlackText,
-
-                            onSubmit: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const AbsenceScreen(),
-                                ),
-                              );
-                              return null;
-                            },
-                            innerColor: Colors.white,
-                            outerColor: const Color(0xFF7EB77F),
-                            sliderButtonIcon: const Icon(
-                              Icons.check_circle,
-                              color: Colors.green,
-                            ),
-                            borderRadius: 16, // Optional: makes it more rounded
-                            elevation: 2, // Optional: adds shadow to the slider
-                          ),
-                        )
-                      :  InkWell(
-                        onTap: () {
-                          Get.to(const EmployeeScreen());
-                        }, child: const StatusCard(),
-                      ),
-                  const SizedBox(
-                    height: 15,
-                  ),
-                  const Divider(),
-                  SizedBox(height: screenHeight * 0.03),
-                  GridView.count(
-                      crossAxisCount: totalGrid,
-                      primary: false,
-                      shrinkWrap: true,
-                      childAspectRatio: screenWidth < 500 ? 1 : 1.5,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ReusableButtonWithText(
-                            onPressed: () {
-                              Get.to(const PermissionMainScreen());
-                            },
-                            icon: FontAwesomeIcons.personCircleCheck,
-                            text: "Absensi",
-                            backgroundColor: const Color(0xFF50C878)),
-                        ReusableButtonWithText(
-                            onPressed: () {
-                              Get.to(const OvertimeScreen());
-                            },
-                            icon: FontAwesomeIcons.userClock,
-                            text: "Lembur",
-                            backgroundColor: const Color(0xFF912F56)),
-                        ReusableButtonWithText(
-                            onPressed: () {
-                              Get.to(AddOutletScreen(
-                                position: position,
-                                placemark: placemark,
-                              ));
-                            },
-                            icon: FontAwesomeIcons.shop,
-                            text: "Tambah lokasi",
-                            backgroundColor: const Color(0xFFF4C430)),
-                        ReusableButtonWithText(
-                            onPressed: () {
-                              Get.to(const HistoryAbsenceScreen());
-                            },
-                            icon: FontAwesomeIcons.businessTime,
-                            text: "Riwayat CI/O",
-                            backgroundColor: const Color(0xFF27476E)),
-                        ReusableButtonWithText(
-                            onPressed: () {
-                              Get.to(const HistoryOrderScreen());
-                            },
-                            icon: Icons.history,
-                            text: "Riwayat Sell-out",
-                            backgroundColor: const Color(0xFF49306B)),
-                        ReusableButtonWithText(
-                            onPressed: () {
-                              Get.to(const VerifyMbdScreen());
-                            },
-                            icon: FontAwesomeIcons.userCheck,
-                            text: "Verifikasi MBD",
-                            backgroundColor: const Color(0xFFC98986)),
-                        ReusableButtonWithText(
-                            onPressed: () {
-                              Get.to(const ProfileScreen());
-                            },
-                            icon: FontAwesomeIcons.person,
-                            text: "Profile",
-                            backgroundColor: const Color(0xFFFAC05E)),
-                        ReusableButtonWithText(
-                            onPressed: () {
-                              Get.to(const DownloadSkuScreen());
-                            },
-                            icon: FontAwesomeIcons.download,
-                            text: "Download Data",
-                            backgroundColor: const Color(0xFF096B72)),
-                        ReusableButtonWithText(
-                            onPressed: () {},
-                            icon: FontAwesomeIcons.gear,
-                            text: "Pengaturan",
-                            backgroundColor: const Color(0xFF33202A)),
-                      ]),
+                        Text(
+                          customerName,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            color: lightText,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          address,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.white70,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right_outlined,
+                    size: 30,
+                    color: lightText,
+                  ),
                 ],
               ),
-            );
-          },
+            ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+class LocationListContent extends StatefulWidget {
+  // Tambahkan properti untuk menerima data lokasi dari parent
+  final Position? parentPosition;
+  final Placemark? parentPlacemark;
+
+  const LocationListContent({
+    super.key,
+    this.parentPosition,
+    this.parentPlacemark,
+  });
+
+  @override
+  State<LocationListContent> createState() => _LocationListContentState();
+}
+
+class _LocationListContentState extends State<LocationListContent> {
+  void getEmployee() async {
+    context.read<EmployeeBloc>().employeeLoad();
+  }
+
+  String _selectedTab = 'Call Plan';
+  bool _isLoadingCallPlan = false;
+  bool _isLoadingSuggest = false;
+
+  String? _currentProjectId;
+
+  final StoreListGetx _locationService = StoreListGetx();
+
+  List<DataSearch> callPlanStores = [];
+  List<DataSearch> suggestStores = [];
+  
+  // HAPUS GETTER currentStoreList
+
+  void _onTabChanged(String newTab) {
+    setState(() {
+      _selectedTab = newTab;
+    });
+
+    // DEBUG: Cetak state list setelah pindah tab
+    debugPrint('Tab Changed to: $newTab');
+    debugPrint('Call Plan Data Count: ${callPlanStores.length}');
+    debugPrint('Suggest Data Count: ${suggestStores.length}');
+
+    if (newTab == 'Call Plan' && callPlanStores.isEmpty && !_isLoadingCallPlan) {
+      _fetchCallPlanStores();
+    }
+
+    if (newTab == 'Suggest' && suggestStores.isEmpty && !_isLoadingSuggest && _currentProjectId != null) {
+      _fetchSuggestStores(_currentProjectId!);
+    }
+  }
+  
+  void _fetchCallPlanStores() async { 
+    if (_isLoadingCallPlan) return;
+
+    setState(() {
+      _isLoadingCallPlan = true;
+      callPlanStores.clear();
+    });
+
+    await _locationService.getCallPlan(
+      (fetchedList) { 
+        if (mounted) {
+          setState(() {
+            callPlanStores = fetchedList; 
+            _isLoadingCallPlan = false;
+            debugPrint('Fetch CALL PLAN Success. Count: ${callPlanStores.length}');
+          });
+        }
+      },
+    );
+    
+    if (mounted && _isLoadingCallPlan) {
+      setState(() {
+        _isLoadingCallPlan = false; 
+      });
+    }
+  }
+
+  void _fetchSuggestStores(String projectId) async { 
+    if (_isLoadingSuggest) return;
+
+    setState(() {
+      _isLoadingSuggest = true;
+      suggestStores.clear();
+    });
+
+    await _locationService.getSuggest(
+      projectId,
+      (fetchedList) { 
+        if (mounted) {
+          setState(() {
+            suggestStores = fetchedList; 
+            _isLoadingSuggest = false;
+            debugPrint('Fetch SUGGEST Success. Count: ${suggestStores.length}');
+          });
+        }
+      },
+    );
+    
+    if (mounted && _isLoadingSuggest) {
+      setState(() {
+        _isLoadingSuggest = false; 
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getEmployee();
+  }
+
+ @override
+ Widget build(BuildContext context) {
+  // Tentukan List dan Loading State yang Aktif secara eksplisit
+    final bool isActiveCallPlan = _selectedTab == 'Call Plan';
+    final List<DataSearch> activeStoreList = isActiveCallPlan ? callPlanStores : suggestStores;
+    final bool isLoadingActiveTab = isActiveCallPlan ? _isLoadingCallPlan : _isLoadingSuggest;
+
+    return BlocListener<EmployeeBloc, EmployeeState>( 
+      listener: (context, stateEmployee) {
+        if (stateEmployee is EmployeeLoaded) {
+          var employee = stateEmployee.data[0];
+          final projectId = employee.projectId.toString();
+          _currentProjectId = projectId;
+
+          if (callPlanStores.isEmpty && !_isLoadingCallPlan) {
+            _fetchCallPlanStores();
+          }
+        }
+      },
+      child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+              SegmentedControlTab(
+                  selectedTab: _selectedTab,
+                  onTabChanged: _onTabChanged,
+              ),
+              Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Button "Tambah Lokasi" (Menggunakan Expanded untuk mengisi ruang)
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Get.to(AddOutletScreen(
+                        position: widget.parentPosition,
+                        placemark: widget.parentPlacemark,
+                      ));
+                    },
+                    icon: const Icon(Icons.add_location_alt_outlined, size: 18),
+                    label: const Text('Tambah Lokasi', style: TextStyle(fontSize: 14)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0D6EFD), // Warna Biru
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      elevation: 1,
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(width: 12), // Jarak antara tombol dan icon
+                
+                // Icon Search
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300, width: 1),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 3,
+                      ),
+                    ],
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.search, color: Color(0xFF1F2937)),
+                    onPressed: () {
+                      Get.to(const HistoryOutletScreen());
+                    },
+                    padding: const EdgeInsets.all(12),
+                    // Kita set minimal ukuran untuk memastikan tombol dan icon seimbang
+                    constraints: const BoxConstraints.tightFor(width: 50, height: 50),
+                  ),
+                ),
+              ],
+            ),
+          ),
+              
+              if (isLoadingActiveTab)
+                  const Center(child: Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child: CircularProgressIndicator(color: Color(0xFF0D6EFD),),
+                  )),
+              
+              if (!isLoadingActiveTab)
+                  // Menggunakan KeyedSubtree untuk memaksa rebuild
+                  KeyedSubtree(
+                      key: ValueKey(_selectedTab), 
+                      child: activeStoreList.isEmpty
+                          ? const Center(child: Padding(
+                              padding: EdgeInsets.all(32.0), 
+                              child: Text("Tidak ada data.") // Tampilkan jika list kosong
+                            ))
+                          : ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              padding: const EdgeInsets.only(top: 8), 
+                              itemCount: activeStoreList.length, 
+                              itemBuilder: (context, index) {
+                                  final store = activeStoreList[index];
+                                  return StoreListItem(
+                                      storeImage: store.photo.toString(),
+                                      storeName: store.customerName.toString(),
+                                      storeAddress: store.address.toString(),
+                                  );
+                              },
+                          ),
+                  ),
+          ],
+      )
     );
   }
 }
@@ -266,56 +543,11 @@ class _ProfileSectionState extends State<ProfileSection> {
     return BlocBuilder<EmployeeBloc, EmployeeState>(
         builder: (context, stateEmployee) {
       if (stateEmployee is EmployeeLoaded) {
-        return ListView.builder(
-          itemCount: stateEmployee.data.length,
-          shrinkWrap: true,
-          itemBuilder: (context, index) {
-            var employee = stateEmployee.data[0];
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(55),
-                    child: Image.asset(
-                      "assets/images/punk-image.jpg",
-                      width: 90,
-                      height: 90,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  const SizedBox(width: 35),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildProfileText(employee.fullname.toString()),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Text(
-                            employee.employeeId.toString(),
-                            style: standarColorFontGrey,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Text(
-                            employee.typeId.toString(),
-                            style: standarColorFontGrey,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
+        var employee = stateEmployee.data[0];
+        return ProfileSectionContent(
+          fullname: employee.fullname.toString(),
+          employeeId: employee.employeeId.toString(),
+          typeId: employee.typeId.toString()
         );
       } else {
         return const Center(
@@ -324,120 +556,208 @@ class _ProfileSectionState extends State<ProfileSection> {
       }
     });
   }
-
-  Widget _buildProfileText(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        text,
-        style: largeBlackText,
-        overflow: TextOverflow.ellipsis,
-        maxLines: 2,
-      ),
-    );
-  }
 }
+class ProfileSectionContent extends StatelessWidget {
+  final String fullname;
+  final String employeeId;
+  final String typeId;
 
-class DownloadMaterialCard extends StatelessWidget {
-  const DownloadMaterialCard({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      child: InkWell(
-        onTap: () {
-          Get.to(const DownloadSkuScreen());
-        },
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: const Color(0xFFdaf0fa),
-            borderRadius: BorderRadius.circular(5),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.download, color: Color(0xFF1181c1),),
-              const SizedBox(width: 20),
-              Text('Download Data', style: smallSkyText),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class MetricsRow extends StatelessWidget {
-  const MetricsRow({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-        MetricCard(
-          title: 'Kunjungan',
-          textStyle: smallGrenTextB,
-          value: '1/10',
-          valueStyle: smallGrenText,
-          backgroundColor: const Color(0xFFDCF9E0),
-        ),
-        MetricCard(
-          textStyle: smallOrangeTextB,
-          valueStyle: smallOrangeText,
-          title: 'Item terjual',
-          value: '40',
-          backgroundColor:  const Color(0xFFf8f0de),
-        ),
-        MetricCard(
-          title: 'Total penjualan',
-          textStyle: smallPurpleTextB,
-          valueStyle: smallPurpleText,
-          value: '40',
-          backgroundColor: const Color(0xFfF8edfe),
-        ),
-      ],
-    );
-  }
-}
-
-class MetricCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final TextStyle textStyle;
-  final TextStyle valueStyle;
-  final Color backgroundColor;
-
-  const MetricCard({
-    required this.title,
-    required this.value,
-    required this.textStyle,
-    required this.valueStyle,
-    required this.backgroundColor,
+  const ProfileSectionContent({
     super.key,
+    required this.fullname,
+    required this.employeeId,
+    required this.typeId,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(5),
-      ),
-      child: Column(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(15, 0, 15, 13),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            title,
-            style: textStyle,
+          ClipRRect(
+            borderRadius: BorderRadius.circular(55),
+            child: Image.asset(
+              "assets/images/punk-image.jpg",
+              width: 65,
+              height: 65,
+              fit: BoxFit.cover,
+            ),
           ),
-          const SizedBox(height: 15),
-          Text(
-            value,
-            style: valueStyle,
+          const SizedBox(width: 18),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildProfileText(fullname),
+                Text(
+                    employeeId,
+                    style: smallTextGrey,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                ),
+                Text(
+                    typeId,
+                    style: smallTextGreyBold,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                ),
+              ],
+            ),
           ),
         ],
+      ),
+    );
+  }
+  
+  Widget _buildProfileText(String text) {
+    return Text(
+        text,
+        style: largeBlackTextB,
+        overflow: TextOverflow.ellipsis,
+        maxLines: 2,
+      );
+  }
+}
+class InfoCardRow extends StatelessWidget {
+  const InfoCardRow({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: <Widget>[
+          Expanded(
+            child: InfoCard(
+              title: 'Kunjungan',
+              value: '0',
+              isFraction: true,
+            ),
+          ),
+          SizedBox(width: 10),
+          
+          Expanded(
+            child: InfoCard(
+              title: 'Item terjual',
+              value: '0',
+            ),
+          ),
+          SizedBox(width: 10),
+
+          Expanded(
+            child: InfoCard(
+              title: 'Total penjualan',
+              value: '0',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+class InfoCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final bool isFraction;
+
+  const InfoCard({
+    super.key,
+    required this.title,
+    required this.value,
+    this.isFraction = false,
+  });
+
+  List<Text> _buildFractionText(String value) {
+    final parts = value.split('/');
+    if (parts.length == 2) {
+      return [
+        Text(
+          parts[0],
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1F2937),
+          ),
+        ),
+        Text(
+          '/${parts[1]}',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey.shade400,
+          ),
+        ),
+      ];
+    }
+    return [
+      Text(
+        value,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF1F2937),
+        ),
+      ),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Container(
+        height: 100,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.05),
+              spreadRadius: 1,
+              blurRadius: 3,
+              offset: const Offset(0, 1), 
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.fromLTRB(15, 15, 15, 5),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start, 
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            if (isFraction)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                mainAxisAlignment: MainAxisAlignment.center, 
+                textBaseline: TextBaseline.alphabetic,
+                children: _buildFractionText(value),
+              )
+            else
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -470,95 +790,236 @@ class FeatureCard extends StatelessWidget {
     );
   }
 }
-
-class StatusCard extends StatefulWidget {
-  const StatusCard({super.key});
-
-  @override
-  State<StatusCard> createState() => _StatusCardState();
+class StoreData {
+  final String image;
+  final String name;
+  final String address;
+  const StoreData({required this.image, required this.name, required this.address});
 }
 
-class _StatusCardState extends State<StatusCard> {
-  int? checkedIn;
-  String? customerName;
-  String? address;
+class StoreListItem extends StatefulWidget {
+  final String storeImage;
+  final String storeName;
+  final String storeAddress;
 
-  void checkCheckedIn() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      checkedIn = prefs.getInt("getIn");
-    });
-  }
+  const StoreListItem({
+    super.key,
+    required this.storeImage,
+    required this.storeName,
+    required this.storeAddress,
+  });
 
-  void checkCustomerName() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      customerName = prefs.getString("customerName");
-    });
-  }
+  @override
+  State<StoreListItem> createState() => _StoreListItemState();
+}
 
-  void getAddress() async {
+// 2. BUAT State Class
+class _StoreListItemState extends State<StoreListItem> {
+  // 3. Pindahkan/Definisikan STATE LOKAL
+  int? _checkedIn; // Menggunakan int? (nullable int) untuk menampung nilai dari prefs
+  
+  // Hapus variabel 'checkedIn' global yang tidak terdefinisi
+  // Hapus SharedPreferences yang tidak digunakan
+  
+  // 4. Pindahkan checkCheckin ke dalam State Class
+  void _checkCheckin() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      address = prefs.getString("address");
-    });
+    // Tidak perlu (mounted) check di initState karena sudah dipanggil di initState,
+    // tapi lebih aman jika diletakkan di dalam method async.
+    if (mounted) { 
+      setState(() {
+        // Ambil nilai 'getIn', default 0 jika null
+        _checkedIn = prefs.getInt("getIn") ?? 0; 
+      });
+    }
   }
 
   @override
   void initState() {
     super.initState();
-    checkCheckedIn();
-    checkCustomerName();
-    getAddress();
+    // Panggil method untuk memuat state saat widget dibuat
+    _checkCheckin(); 
   }
+  
+  // Hapus method dispose jika tidak digunakan, tapi disarankan untuk ada
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 5, right: 5),
-      child: Padding(
-        padding: const EdgeInsets.all(15),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          mainAxisSize: MainAxisSize.min, // Sesuaikan ukuran row dengan konten
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    customerName ?? 'Unknown',
-                    style: smallBlackTextB,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    address ?? 'No Address',
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 3,
-                    style: extraSmallBlackText,
-                  ),
-                ],
+    const Color checkInBlue = Color(0xFF0D6EFD);
+
+    // Pastikan _checkedIn sudah memiliki nilai sebelum digunakan
+    final isCheckedIn = _checkedIn == 1; 
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: <Widget>[
+          // --- IMAGE CONTAINER (Menggunakan widget.storeImage) ---
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200, 
+              borderRadius: BorderRadius.circular(5),
+              image: DecorationImage(
+                // Mengakses properti widget melalui 'widget.'
+                image: NetworkImage("https://api.traxes.id/${widget.storeImage}"), 
+                fit: BoxFit.cover,
               ),
             ),
-            InkWell(
-              onTap: () {
-                Get.to(const AbsenceScreen());
+          ),
+          const SizedBox(width: 12),
+          // --- DETAIL TOKO ---
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Text(
+                  widget.storeName, // Mengakses properti widget
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1F2937),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  widget.storeAddress, // Mengakses properti widget
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          // --- BUTTON CHECK-IN ---
+          // Menggunakan state isCheckedIn
+          Visibility(
+            visible: isCheckedIn ? false : true, 
+            child: ElevatedButton(
+              onPressed: () {
+                 // Tambahkan logic check-in di sini
               },
-              child: Card(
-                color: const Color(0xFFB23A48),
-                child: Padding(
-                  padding: const EdgeInsets.all(25),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: checkInBlue,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                minimumSize: Size.zero, 
+              ),
+              child: const Text(
+                'Check-in',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SegmentedControlTab extends StatelessWidget {
+  final String selectedTab;
+  final ValueChanged<String> onTabChanged;
+
+  const SegmentedControlTab({
+    super.key,
+    required this.selectedTab,
+    required this.onTabChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const Color activeBlue = Color(0xFFE5F0FF); 
+    const Color activeTextColor = Color(0xFF0D6EFD);
+    const Color inactiveTextColor = Color(0xFF6B7280);
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8, left: 16, right: 16, bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Tab 1: Call Plan
+          Expanded(
+            child: GestureDetector(
+              onTap: () => onTabChanged('Call Plan'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: selectedTab == 'Call Plan' ? activeBlue : Colors.white,
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                child: Center(
                   child: Text(
-                    "Check-out",
-                    style: smallWhiteText,
+                    'Call Plan',
+                    style: TextStyle(
+                      color: selectedTab == 'Call Plan' ? activeTextColor : inactiveTextColor,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+          // Tab 2: Suggest
+          Expanded(
+            child: GestureDetector(
+              onTap: () => onTabChanged('Suggest'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: selectedTab == 'Suggest' ? activeBlue : Colors.white,
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                child: Center(
+                  child: Text(
+                    'Suggest',
+                    style: TextStyle(
+                      color: selectedTab == 'Suggest' ? activeTextColor : inactiveTextColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

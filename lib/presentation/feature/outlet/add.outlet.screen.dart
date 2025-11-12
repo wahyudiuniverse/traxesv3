@@ -148,9 +148,10 @@ class _AddOutletScreenState extends State<AddOutletScreen> {
           }
           refreshController.refreshCompleted();
         });
-      } else if (position!.isMocked) {
-        Get.offAll(const FakeGPSWarningScreen());
-      }
+      } 
+      // else if (position!.isMocked) {
+      //   Get.offAll(const FakeGPSWarningScreen());
+      // }
     } else {
       refreshController.refreshFailed();
     }
@@ -568,9 +569,10 @@ class _AddOutletScreenState extends State<AddOutletScreen> {
                                             .submitOutlet(data, context);
                                         GetGeolocator().getCurrentLocation();
                                         const Duration(seconds: 3);
-                                      } else if (position!.isMocked) {
-                                        const FakeGPSWarningScreen();
-                                      }
+                                      } 
+                                      // else if (position!.isMocked) {
+                                      //   const FakeGPSWarningScreen();
+                                      // }
                                     });
                               }
                             },

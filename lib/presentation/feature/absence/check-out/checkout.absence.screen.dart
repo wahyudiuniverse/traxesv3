@@ -134,9 +134,9 @@ class _CheckOutAbsenceScreenState extends State<CheckOutAbsenceScreen> {
   Future<void> getCurrentLocation() async {
     position = await GetGeolocator().getCurrentLocation();
     calculateDistanceIn();
-    if (position!.isMocked) {
-      Get.off(const FakeGPSWarningScreen());
-    }
+    // if (position!.isMocked) {
+    //   Get.off(const FakeGPSWarningScreen());
+    // }
   }
 
   @override
@@ -535,10 +535,10 @@ class _CheckOutAbsenceScreenState extends State<CheckOutAbsenceScreen> {
                                       SharedPreferences prefs =
                                           await SharedPreferences.getInstance();
 
-                                      if (position!.isMocked) {
-                                        Get.offAll(
-                                            const FakeGPSWarningScreen());
-                                      }
+                                      // if (position!.isMocked) {
+                                      //   Get.offAll(
+                                      //       const FakeGPSWarningScreen());
+                                      // }
 
                                       var longitudeToko = widget.longToko;
                                       var latitudeToko = widget.latToko;

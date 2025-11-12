@@ -190,7 +190,17 @@ final smallSkyText = GoogleFonts.poppins (
   fontSize: 20, color: const Color(0xFF1181c1)
 );
 
+final smallTextGrey = GoogleFonts.poppins(
+    fontSize: 13, color: Colors.black54, fontWeight: FontWeight.normal);
 
+final smallTextGreyBold = GoogleFonts.poppins(
+    fontSize: 13, color: Colors.black54, fontWeight: FontWeight.w500);
+
+final smallTextBlue = GoogleFonts.poppins(
+    fontSize: 16, color: const Color(0xFF0D6EFD), fontWeight: FontWeight.w600);
+
+final smallTextWhite = GoogleFonts.poppins(
+    fontSize: 16, color: Colors.white, fontWeight: FontWeight.w600);
 
 
 

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:traxes/constant/screen/full.image.dart';
 import 'package:traxes/constant/text.style.dart';
+import 'package:traxes/presentation/bottom_navigation/bottom_navigation.screen.dart';
 import 'package:traxes/presentation/user/activity.screen.dart';
 
 class SuccessScreen extends StatelessWidget {
@@ -111,7 +112,8 @@ class SuccessScreen extends StatelessWidget {
                ),
                ElevatedButton(
                     onPressed: () {
-                      Get.offAll(const EmployeeScreen());
+                      Get.offAll(const BottomNavigation());
+                      Get.to(const EmployeeScreen());
                     },
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(

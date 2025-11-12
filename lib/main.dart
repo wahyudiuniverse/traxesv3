@@ -39,7 +39,7 @@ import 'package:traxes/constant/env/config.url.dart';
 
 Future<void> main() async {
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.grey
+    statusBarColor: Color(0xFFF8F9FA),
   ));
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
