@@ -5,7 +5,6 @@ import 'package:dio_smart_retry/dio_smart_retry.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,7 +13,6 @@ import 'package:traxes/constant/util/dio.mixin.dart';
 import 'package:traxes/database_offline/db.lite.dart';
 import 'package:traxes/model/login/employee.model.dart';
 import 'package:traxes/model/login/login.employee.model.dart';
-import 'package:traxes/presentation/dashboard/dashboard.screen.dart';
 
 class EmployeeBloc extends Cubit<EmployeeState> {
   EmployeeBloc() : super(EmployeeLoading());
@@ -73,11 +71,9 @@ class EmployeeBloc extends Cubit<EmployeeState> {
       var bodyMessage = ResponseEmployeeModel.fromJson(response.data).message;
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        if (bodyStatus == 9 || bodyStatus == 1) {
-          onSuccess();
+        if (bodyStatus == 9 || bodyStatus == 1) {          
           EasyLoading.showSuccess(bodyMessage.toString(),
               duration: const Duration(seconds: 3));
-          prefs.setBool("login", true);
 
           var resbody = ResponseEmployeeModel.fromJson(response.data).data;
 
@@ -98,8 +94,7 @@ class EmployeeBloc extends Cubit<EmployeeState> {
               .then((value) => {
                     if (value != 0)
                       {
-                        Get.offAll(
-                            const DashboardScreen())
+                        onSuccess()
                       }
                     else
                       {onFailed(bodyMessage.toString())}

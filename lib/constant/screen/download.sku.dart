@@ -114,92 +114,38 @@ version = packageInfo.version;
                                 CustomButton(
                                   borderRadius: BorderRadius.circular(8),
                                   onPressed: () async {
-                                    SharedPreferences prefs =
-                                        await SharedPreferences.getInstance();
-                                    var setDownload = prefs.getInt("download");
-                                    if (setDownload == 1) {
-                                      CoolAlert.show(
-                                          context: context,
-                                          type: CoolAlertType.error,
-                                          title: "Material sudah di download!, hapus material terlebih dahulu untuk mendownload",
-                                          confirmBtnText: "kembali",
-                                          titleTextStyle: smallBlackText,
-                                          confirmBtnTextStyle: smallWhiteText);
-                                    } else {
-                                      CoolAlert.show(
-                                          context: context,
-                                          type: CoolAlertType.confirm,
-                                          title: "Download material sekarang?",
-                                          confirmBtnText: "Download",
-                                          confirmBtnTextStyle: smallWhiteText,
-                                          onConfirmBtnTap: () async {
-                                            prefs.setInt("download", 1);
+                                    SharedPreferences prefs = await SharedPreferences.getInstance();
 
-                                            // });
-                                            context
-                                                .read<SkuProBloc>()
-                                                .getSkuPro();
+                                    DBMaterialHelper().deleteMaterialDB();
 
-                                            final newTotal =
-                                                await DBMaterialHelper()
-                                                    .getTotalRows(projectId!);
-                                            setState(() {
-                                              totalDownloaded = newTotal ?? 0;
-                                            });
+                                    CoolAlert.show(
+                                        context: context,
+                                        type: CoolAlertType.confirm,
+                                        title: "Download material sekarang?",
+                                        confirmBtnText: "Download",
+                                        confirmBtnTextStyle: smallWhiteText,
+                                        onConfirmBtnTap: () async {
+                                          prefs.setInt("download", 1);
+
+                                          await context.read<SkuProBloc>().getSkuPro();
+
+                                          final newTotal = await DBMaterialHelper().getTotalRows(projectId!);
+                                          
+                                          if (!mounted) return;
+
+                                          setState(() {
+                                            totalDownloaded = newTotal ?? 0;
                                           });
-                                    }
-                                  },
+                                        });
+                                    },
                                   child: Text(
-                                    "Download SKU",
+                                    "Sync SKU",
                                     style: smallWhiteText,
                                   ),
                                 ),
                                 const SizedBox(
                                   height: 5,
-                                ),
-                                CustomButton(
-                                  borderRadius: BorderRadius.circular(8),
-                                  onPressed: () async {
-                                    CoolAlert.show(
-                                        context: context,
-                                        type: CoolAlertType.confirm,
-                                        title: "Hapus material sekarang?",
-                                        confirmBtnText: "Hapus",
-                                        confirmBtnTextStyle: smallWhiteText,
-                                        onConfirmBtnTap: () async {
-                                          SharedPreferences prefs =
-                                              await SharedPreferences
-                                                  .getInstance();
-
-                                          // DBMaterialHelper()
-                                          //     .deleteMaterialDB()
-                                          //     .then((value) => {
-                                          //           context
-                                          //               .read<SkuProBloc>()
-                                          //               .getSkuPro()
-                                          //         });
-                                          // final newTotal = await DBMaterialHelper()
-                                          //     .getTotalRows(projectId!);
-                                          // setState(() {
-                                          //   totalDownloaded = newTotal ?? 0;
-                                          // });
-                                          DBMaterialHelper().deleteMaterialDB();
-
-                                          final newTotal =
-                                              await DBMaterialHelper()
-                                                  .getTotalRows(projectId!);
-                                          setState(() {
-                                            totalDownloaded = newTotal ?? 0;
-                                            prefs.remove("download");
-                                          });
-                                        });
-                                  },
-                                  child: Text(
-                                    "Hapus Material",
-                                    style: smallWhiteText,
-                                  ),
-                                ),
-                              
+                                ),                                
                               ],
                             ),
                           ),

@@ -64,12 +64,13 @@ class SkuProBloc extends Cubit<SkuProState> {
         EasyLoading.showSuccess("Berhasil download material",
             duration: const Duration(seconds: 3));
         var resbody = SkuProModel.fromJson(response.data).data;
-
+          
         if (resbody != null && resbody.isNotEmpty) {
           for (var i = 0; i < resbody.length; i++) {
             DBMaterialHelper().addMaterialData(DataSkuPro(
               secid: resbody[i].secid,
               kodeSku: resbody[i].kodeSku,
+              barcode: resbody[i].barcode,
               namaMaterial: resbody[i].namaMaterial,
               materialType: resbody[i].materialType,
               category: resbody[i].category,

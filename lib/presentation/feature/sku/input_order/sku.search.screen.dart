@@ -4,6 +4,7 @@ import 'package:traxes/constant/widget/gradient.appbar.dart';
 import 'package:traxes/constant/text.style.dart';
 import 'package:traxes/getx/skusearch.controller.dart';
 import 'package:traxes/presentation/feature/sku/input_order/sku.dart';
+import 'package:flutter_barcode_scanner_update/flutter_barcode_scanner_update.dart';
 
 class SearchSku extends StatefulWidget {
   const SearchSku({super.key});
@@ -78,6 +79,41 @@ class _SearchSkuState extends State<SearchSku> {
                         ),
                         child: IconButton(
                           hoverColor: const Color(0xFF1C4966),
+                          icon: const Icon(Icons.qr_code_scanner,
+                              color: Color(0xFF1C4966)),
+                          onPressed: () async {
+                            String barcode = await FlutterBarcodeScanner.scanBarcode(
+                              "#ff1a1a", 
+                              "Batal", 
+                              false,
+                              ScanMode.BARCODE
+                            );
+                            
+                            debugPrint('barcode: $barcode');
+
+                            setState(() {
+                              searchController.loadLocalSkuScan(
+                                barcode, () {
+                                setState(() {
+                                  isListViewVisible = true;
+                                });
+                              });
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        right: 15,
+                      ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: const Color(0xFF1C4966)),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: IconButton(
+                          hoverColor: const Color(0xFF1C4966),
                           icon: const Icon(Icons.search,
                               color: Color(0xFF1C4966)),
                           onPressed: () {
@@ -101,8 +137,9 @@ class _SearchSkuState extends State<SearchSku> {
                     itemCount: searchController.dataResults.length,
                     shrinkWrap: true,
                     physics: const BouncingScrollPhysics(),
-                    itemBuilder: (context, i) {
+                    itemBuilder: (context, i) {                      
                       dynamic outlet = searchController.dataResults[i];
+                      debugPrint(outlet.barcode);
                       return Column(children: [
                         GestureDetector(
                           onTap: () {

@@ -30,6 +30,7 @@ class SkuProModel {
 class DataSkuPro {
   String? secid;
   String? kodeSku;
+  String? barcode;
   String? namaMaterial;
   String? materialType;
   String? category;
@@ -48,6 +49,7 @@ class DataSkuPro {
   DataSkuPro(
       {this.secid,
       this.kodeSku,
+      this.barcode,
       this.namaMaterial,
       this.materialType,
       this.category,
@@ -66,6 +68,7 @@ class DataSkuPro {
   DataSkuPro.fromJson(Map<String, dynamic> json) {
     secid = json['secid'];
     kodeSku = json['kode_sku'];
+    barcode = json['barcode'];
     namaMaterial = json['nama_material'];
     materialType = json['material_type'];
     category = json['category'];
@@ -86,6 +89,7 @@ class DataSkuPro {
     final Map<String, dynamic> data = <String, dynamic>{};
     data['secid'] = secid;
     data['kode_sku'] = kodeSku;
+    data['barcode'] = barcode;
     data['nama_material'] = namaMaterial;
     data['material_type'] = materialType;
     data['category'] = category;

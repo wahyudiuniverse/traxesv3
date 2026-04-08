@@ -16,11 +16,10 @@ class BoardingScreen extends StatefulWidget {
 
 class _BoardingScreenState extends State<BoardingScreen> {
   Timer? timerCheck;
-    int? checkedIn;
+  int? checkedIn;
+  int _currentYear = 0;
 
-  // bool? showProgress = true;
-
-   void checkCheckin() async {
+  void checkCheckin() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       checkedIn = prefs.getInt("getIn");
@@ -30,30 +29,32 @@ class _BoardingScreenState extends State<BoardingScreen> {
   checkLogin() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool? checkLogin = prefs.getBool("login");
-    
-     
-   timerCheck = Timer(
-        const Duration(milliseconds: 500),
-        () {
-              if (checkLogin == null)
-                {Get.offAll(const LoginEmployeeScreen());}
-              else
-                {
-                  if(checkedIn != 1) {
-                     Get.offAll(const DashboardScreen(
-                  ));
-                  } else {
-                    Get.offAll(const EmployeeScreen());
-                  }
-                }
-            });
-  } // --> function for timer login and validation login
+    timerCheck = Timer(const Duration(milliseconds: 500), () {
+      if (checkLogin == null) {
+        Get.offAll(const LoginEmployeeScreen());
+      } else {
+        if (checkedIn != 1) {
+          Get.offAll(const DashboardScreen());
+        } else {
+          Get.offAll(const EmployeeScreen());
+        }
+      }
+    });
+  }
+
+  void _getYear() {
+    DateTime now = DateTime.now();
+    setState(() {
+      _currentYear = now.year;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     checkLogin();
     checkCheckin();
+    _getYear();
   }
 
   @override
@@ -65,26 +66,29 @@ class _BoardingScreenState extends State<BoardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      body: Stack(
         children: [
           Center(
-              child: Column(
-            children: [
-              Transform.scale(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Transform.scale(
                   scale: 0.8,
                   child: Image.asset("assets/images/traxes-icon.png",
-                      fit: BoxFit.cover, height: 250)),
-              const SizedBox(
-                height: 20,
-              ),
-            ],
-          )),
+                      fit: BoxFit.cover, height: 150),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
           Align(
             alignment: Alignment.bottomCenter,
-            child: Text(
-              "\u00a9 2023 OneCorp All Rights Reserved",
-              style: extraSmallBlackText,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 20.0),
+              child: Text(
+                "\u00a9 $_currentYear OneCorp All Rights Reserved",
+                style: extraSmallBlackText,
+              ),
             ),
           ),
         ],

@@ -83,6 +83,9 @@ dependencies:
   flutter_slidable: ^3.1.1
   slide_to_act: ^2.0.2
   action_slider: ^0.7.0
+  flutter_barcode_scanner_update:
+    git:
+      url: https://github.com/angelicadelacruzgonzalez/flutter_barcode_scanner.git
 
 dependency_overrides:
   flare_flutter:
